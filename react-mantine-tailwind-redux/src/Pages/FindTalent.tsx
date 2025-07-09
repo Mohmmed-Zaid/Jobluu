@@ -1,6 +1,6 @@
 import React from "react";
-import Header from "../Header/Header"; // Assuming Header is in this path
-import Footer from "../footer/Footer"; // Assuming Footer is in this path
+import Header from "../Header/Header"; 
+import Footer from "../footer/Footer"; 
 import SearchBar from "../FindTalent/SearchBar";
 import Talents from "../FindTalent/Talent";
 

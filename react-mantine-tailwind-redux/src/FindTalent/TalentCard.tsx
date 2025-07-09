@@ -1,90 +1,119 @@
 import React from "react";
-import { IconUserScan, IconMail } from "@tabler/icons-react"; // Using user and mail icons
+import { useNavigate } from 'react-router-dom';
+import { IconMail, IconMapPin, IconCurrencyDollar, IconStar } from "@tabler/icons-react";
 
-// Interface to define the structure of a single talent profile.
 interface TalentProps {
   talent: {
-    id: number; // Unique identifier for the talent
-    avatar: string; // URL for the talent's avatar image
-    name: string; // Name of the talent
-    title: string; // Professional title or role of the talent
-    skills: string[]; // Array of main skills
-    description: string; // Short description or bio
-    expectedSalary: string; // Expected salary range
-    location: string; // Talent's location
-    experienceLevel: string; // Experience level (e.g., "Mid-level", "Senior")
+    id: number;
+    avatar: string;
+    name: string;
+    title: string;
+    skills: string[];
+    description: string;
+    expectedSalary: string;
+    location: string;
+    experienceLevel: string;
   };
 }
 
-/**
- * TalentCard component: Displays a single talent profile in a card format.
- * It's designed to be visually similar to JobCards but adapted for talent information.
- */
 const TalentCard: React.FC<TalentProps> = ({ talent }) => {
+  const navigate = useNavigate();
+
   return (
-    // Card container with dark background, padding, rounded corners, and shadow.
-    // Adds hover effects for scale, shadow, and border to make it interactive.
-    <div className="bg-mine-shaft-900 p-3 rounded-xl text-white shadow-sm w-[17rem] h-[16rem] flex flex-col justify-between transition-transform duration-300 hover:scale-[1.02] hover:shadow-lg hover:border border-yellow-400">
-      {/* Header section: Avatar + Name/Title + Connect Icon */}
-      <div className="flex justify-between items-start">
-        <div className="flex items-center gap-2">
-          {/* Talent Avatar */}
-          <img
-            src={talent.avatar}
-            alt={talent.name}
-            className="w-9 h-9 rounded-full object-cover border border-gray-600" // Larger, rounded avatar
-            // Fallback for broken image or if avatar is not available
-            onError={(e) => {
-              e.currentTarget.src = "https://placehold.co/36x36/4f4f4f/ffffff?text=AV";
-            }}
-          />
+    <div className="group relative bg-mine-shaft-900 p-3 sm:p-4 rounded-xl sm:rounded-2xl text-white shadow-xl w-[17rem] sm:w-[18rem] h-[16rem] sm:h-[18rem] flex flex-col justify-between transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-yellow-400/20 border border-slate-700 hover:border-yellow-400/50 backdrop-blur-sm">
+      
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-transparent to-yellow-400/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      
+      {/* Header Section */}
+      <div className="relative z-10 flex justify-between items-start">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="relative">
+            <img
+              src={talent.avatar}
+              alt={talent.name}
+              className="w-9 h-9 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-slate-600 group-hover:border-yellow-400 transition-colors duration-300 shadow-lg"
+              onError={(e) => {
+                e.currentTarget.src = "https://placehold.co/48x48/4f4f4f/ffffff?text=AV";
+              }}
+            />
+            <div className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full border-2 border-mine-shaft-900 animate-pulse" />
+          </div>
+          
           <div>
-            {/* Talent Name */}
-            <h3 className="text-[14px] font-semibold leading-none">
+            <h3 className="text-sm sm:text-base font-bold leading-tight text-white group-hover:text-yellow-400 transition-colors duration-300">
               {talent.name}
             </h3>
-            {/* Talent Title and Experience Level */}
-            <p className="text-[11px] text-gray-400">
-              {talent.title} • {talent.experienceLevel}
+            <p className="text-xs sm:text-sm text-slate-400 font-medium mt-0.5">
+              {talent.title}
             </p>
+            <div className="flex items-center gap-1 mt-1">
+              <IconStar size={10} className="sm:hidden text-yellow-400" />
+              <IconStar size={12} className="hidden sm:block text-yellow-400" />
+              <span className="text-xs text-slate-400">{talent.experienceLevel}</span>
+            </div>
           </div>
         </div>
-        {/* Icon to indicate connection or favorite (e.g., a "connect" or "message" icon) */}
-        <IconMail size={18} className="text-yellow-400 cursor-pointer" />
+        
+        <div className="relative">
+          <IconMail 
+            size={18} 
+            className="sm:hidden text-yellow-400 cursor-pointer hover:text-yellow-300 transition-all duration-300 hover:scale-110 drop-shadow-lg" 
+          />
+          <IconMail 
+            size={20} 
+            className="hidden sm:block text-yellow-400 cursor-pointer hover:text-yellow-300 transition-all duration-300 hover:scale-110 drop-shadow-lg" 
+          />
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+        </div>
       </div>
 
-      {/* Skills Tags */}
-      <div className="flex flex-wrap gap-1 mt-1 text-[10px] text-gray-300">
-        {/* Map through the first 4 skills to display them as tags. */}
+      {/* Skills Section */}
+      <div className="relative z-10 flex flex-wrap gap-1 sm:gap-1.5 mt-2 sm:mt-3 min-h-[24px]">
         {talent.skills.slice(0, 4).map((skill, index) => (
-          <span key={index} className="bg-mine-shaft-800 px-2 py-[1px] rounded-full">
+          <span 
+            key={index} 
+            className="bg-mine-shaft-800 hover:bg-slate-600/70 px-2 sm:px-2.5 py-1 rounded-full text-xs text-slate-300 hover:text-white transition-all duration-300 backdrop-blur-sm border border-slate-600/50 hover:border-yellow-400/50"
+          >
             {skill}
           </span>
         ))}
-        {/* If there are more than 4 skills, indicate with "+X more" */}
         {talent.skills.length > 4 && (
-          <span className="bg-mine-shaft-800 px-2 py-[1px] rounded-full">
+          <span className="bg-yellow-400/20 text-yellow-400 px-2 sm:px-2.5 py-1 rounded-full text-xs font-medium border border-yellow-400/30">
             +{talent.skills.length - 4} more
           </span>
         )}
       </div>
 
       {/* Description */}
-      <p className="text-[10px] text-gray-400 mt-1 line-clamp-3 leading-tight">
-        {talent.description}
-      </p>
+      <div className="relative z-10 flex-1 mt-2 sm:mt-3">
+        <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed overflow-hidden">
+          {talent.description}
+        </p>
+      </div>
 
-      {/* Location & Expected Salary */}
-      <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-        <span className="text-green-400">{talent.location}</span>
-        <span className="text-yellow-400 font-medium text-[11px]">
-          {talent.expectedSalary}
-        </span>
+      {/* Location and Salary */}
+      <div className="relative z-10 flex justify-between items-center mt-2 sm:mt-3 p-2 bg-mine-shaft-800/50 rounded-lg backdrop-blur-sm border border-slate-700/50">
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          <IconMapPin size={12} className="sm:hidden text-emerald-400" />
+          <IconMapPin size={14} className="hidden sm:block text-emerald-400" />
+          <span className="text-xs text-emerald-400 font-medium">{talent.location}</span>
+        </div>
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          <IconCurrencyDollar size={12} className="sm:hidden text-yellow-400" />
+          <IconCurrencyDollar size={14} className="hidden sm:block text-yellow-400" />
+          <span className="text-xs text-yellow-400 font-bold">
+            {talent.expectedSalary}
+          </span>
+        </div>
       </div>
 
       {/* View Profile Button */}
-      <div className="flex justify-center items-center mt-2">
-        <button className="bg-yellow-400 text-black text-[10px] font-semibold px-3 py-[4px] rounded-full hover:bg-yellow-300 transition duration-200 w-full">
+      <div className="relative z-10 mt-2 sm:mt-3">
+        <button
+          onClick={() => navigate("/talent-profile")}
+          className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-yellow-400/30 active:scale-95 transform"
+        >
           View Profile
         </button>
       </div>
@@ -92,5 +121,4 @@ const TalentCard: React.FC<TalentProps> = ({ talent }) => {
   );
 };
 
-export default TalentCard;
-
+export default TalentCard;  

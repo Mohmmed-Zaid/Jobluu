@@ -6,10 +6,14 @@ import HomePages from './Pages/HomePages';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import FindJob from './Pages/FindJob';
 import FindTalent from './Pages/FindTalent';
-import UploadJob from './Pages/UploadJob';
+import TalentProfilePage from './Pages/TalentProfilePage';
+import UploadJobPage from './Pages/UploadJobPage';
+
 
 function App() {
   const theme = createTheme({
+    primaryColor:"bright-sun",
+    primaryShade:4,
     colors: {
       'mine-shaft': [
         '#f6f6f6', '#e7e7e7', '#d1d1d1', '#b0b0b0', '#888888',
@@ -28,8 +32,8 @@ function App() {
         <Routes>
           <Route path="find-jobs" element={<FindJob/>}/>
           <Route path="find-talent" element={<FindTalent/>} />
-          <Route path="upload-job" element={<UploadJob />} />
-
+          <Route path="upload-job" element={<UploadJobPage />} />
+          <Route path="talent-profile" element={<TalentProfilePage/>} />
           <Route path="*" element={<HomePages />} /> {/**we cre this wild card route for mainly 404 or not found page */}
         </Routes>
       </BrowserRouter>
