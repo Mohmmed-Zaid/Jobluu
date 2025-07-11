@@ -8,6 +8,11 @@ import FindJob from './Pages/FindJob';
 import FindTalent from './Pages/FindTalent';
 import TalentProfilePage from './Pages/TalentProfilePage';
 import UploadJobPage from './Pages/UploadJobPage';
+import JobDescPage from './Pages/JobDescPage';
+import ApplyJobPage from './Pages/ApplyJobPage';
+import CompanyPage from './Pages/CompanyPage';
+import PostedJobPage from './Pages/PostedJobPage';
+import JobHistoryPage from './Pages/JobHistoryPage';
 
 
 function App() {
@@ -34,6 +39,13 @@ function App() {
           <Route path="find-talent" element={<FindTalent/>} />
           <Route path="upload-job" element={<UploadJobPage />} />
           <Route path="talent-profile" element={<TalentProfilePage/>} />
+          <Route path="jobs" element={<JobDescPage />} />
+          <Route path="apply-job" element={<ApplyJobPage />} />
+          <Route path="company" element={<CompanyPage/>} />
+          <Route path="posted-job" element={<PostedJobPage/>} />
+          <Route path="job-history" element={<JobHistoryPage/>} />
+
+
           <Route path="*" element={<HomePages />} /> {/**we cre this wild card route for mainly 404 or not found page */}
         </Routes>
       </BrowserRouter>
