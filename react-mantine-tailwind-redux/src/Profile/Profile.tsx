@@ -4,13 +4,11 @@ import {
   IconStar,
   IconBriefcase,
   IconCalendar,
-  IconMail,
-  IconPhone,
   IconShare,
   IconBookmark,
   IconPencil,
 } from "@tabler/icons-react";
-import { ActionIcon, Modal, TextInput, Button } from "@mantine/core";
+import { ActionIcon, Modal, TextInput, Textarea, Button } from "@mantine/core";
 import ExpCard from "./ExpCard";
 import RecommendTalent from "./RecommendTalent";
 import CertificateCard from "./CertificateCard";
@@ -20,8 +18,8 @@ import Footer from "../footer/Footer";
 const Profile = () => {
   const fileInputRef = useRef(null);
   const [avatar, setAvatar] = useState("/avatar.png");
-
   const [editOpen, setEditOpen] = useState(false);
+
   const [profileData, setProfileData] = useState({
     name: "Jarrod Wood",
     title: "Software Engineer",
@@ -29,7 +27,21 @@ const Profile = () => {
     experience: "5+ Years Experience",
   });
 
-  const handleAvatarChange = (e: { target: { files: any[]; }; }) => {
+  const [about, setAbout] = useState(
+    "Experienced software engineer passionate about building scalable web applications and clean user experiences. Specialized in React, Node.js, and system design."
+  );
+
+  const [skills, setSkills] = useState([
+    "React",
+    "Node.js",
+    "TypeScript",
+    "Python",
+    "AWS",
+    "MongoDB",
+  ]);
+  const [newSkill, setNewSkill] = useState("");
+
+  const handleAvatarChange = (e: { target: { files: any[] } }) => {
     const file = e.target.files?.[0];
     if (file) setAvatar(URL.createObjectURL(file));
   };
@@ -37,6 +49,8 @@ const Profile = () => {
   return (
     <>
       <Header />
+
+      {/* Modal for editing */}
       <Modal opened={editOpen} onClose={() => setEditOpen(false)} title="Edit Profile">
         <TextInput
           label="Full Name"
@@ -62,6 +76,46 @@ const Profile = () => {
           onChange={(e) => setProfileData({ ...profileData, experience: e.target.value })}
           mb="sm"
         />
+        <Textarea
+          label="About"
+          value={about}
+          onChange={(e) => setAbout(e.target.value)}
+          autosize
+          minRows={3}
+          mb="sm"
+        />
+        <TextInput
+          label="Add Skill"
+          value={newSkill}
+          onChange={(e) => setNewSkill(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && newSkill.trim()) {
+              e.preventDefault();
+              if (!skills.includes(newSkill.trim())) {
+                setSkills([...skills, newSkill.trim()]);
+                setNewSkill("");
+              }
+            }
+          }}
+          mb="xs"
+        />
+        <div className="flex flex-wrap gap-2 mb-4">
+          {skills.map((skill, i) => (
+            <span
+              key={i}
+              className="flex items-center bg-mine-shaft-800 text-gray-200 px-3 py-1 rounded-full text-sm border border-slate-700/50"
+            >
+              {skill}
+              <button
+                onClick={() => setSkills(skills.filter((_, idx) => idx !== i))}
+                className="ml-2 text-red-400 hover:text-red-300"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+
         <Button onClick={() => setEditOpen(false)} fullWidth mt="md" color="yellow">
           Save Changes
         </Button>
@@ -113,11 +167,11 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Profile Main Info */}
+        {/* Profile Info */}
         <div className="pt-24 pb-8 px-8 text-white">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <h2 className="text-3xl font-bold text-gradient bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
                 {profileData.name}
               </h2>
               <p className="text-lg text-yellow-400 font-semibold mt-1">{profileData.title}</p>
@@ -174,8 +228,7 @@ const Profile = () => {
           <div className="mb-6">
             <h3 className="text-white font-semibold mb-3 text-lg">About</h3>
             <div className="text-gray-300 text-sm leading-relaxed bg-mine-shaft-800/30 p-4 rounded-xl border border-slate-700/30">
-              Experienced software engineer passionate about building scalable web applications
-              and clean user experiences. Specialized in React, Node.js, and system design.
+              {about}
             </div>
           </div>
 
@@ -183,7 +236,7 @@ const Profile = () => {
           <div className="mb-8">
             <h3 className="text-white font-semibold mb-3 text-lg">Core Skills</h3>
             <div className="flex flex-wrap gap-2">
-              {["React", "Node.js", "TypeScript", "Python", "AWS", "MongoDB"].map((skill) => (
+              {skills.map((skill) => (
                 <span
                   key={skill}
                   className="bg-mine-shaft-800 hover:bg-mine-shaft-700 text-gray-300 hover:text-white px-3 py-2 rounded-full text-sm border border-slate-700/50 hover:border-yellow-400/50 transition cursor-pointer"
@@ -191,9 +244,6 @@ const Profile = () => {
                   {skill}
                 </span>
               ))}
-              <span className="text-yellow-400 px-3 py-2 rounded-full text-sm cursor-pointer hover:bg-yellow-400/10 transition">
-                +12 more
-              </span>
             </div>
           </div>
 
@@ -214,7 +264,7 @@ const Profile = () => {
           <h3 className="text-white font-semibold text-lg mb-4">Experience</h3>
           <ExpCard />
 
-          {/* Certification Section */}
+          {/* Certifications */}
           <h3 className="text-white font-semibold text-lg mb-4 mt-8">Certifications</h3>
           <CertificateCard />
 
