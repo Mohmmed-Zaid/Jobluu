@@ -43,7 +43,6 @@ const recommendedTalents = [
 const RecommendTalent = () => {
   return (
     <div className="mt-8">
-      <h3 className="text-white font-semibold text-lg mb-4">Recommended Talent</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {recommendedTalents.map((talent, index) => (
           <div

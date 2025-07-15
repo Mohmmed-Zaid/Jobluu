@@ -29,7 +29,7 @@ const Profile = () => {
     experience: "5+ Years Experience",
   });
 
-  const handleAvatarChange = (e) => {
+  const handleAvatarChange = (e: { target: { files: any[]; }; }) => {
     const file = e.target.files?.[0];
     if (file) setAvatar(URL.createObjectURL(file));
   };

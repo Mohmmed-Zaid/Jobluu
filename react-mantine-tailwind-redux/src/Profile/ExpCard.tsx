@@ -40,11 +40,6 @@ const ExpCard = () => {
         microservices architecture and improved system performance by 35%. Collaborated with
         cross-functional teams to design secure and efficient solutions for global users.
       </p>
-      
-      {/**Certification card */}
-      <h3 className="text-white font-semibold text-lg mb-4 mt-8">Certifications</h3>
-      <CertificateCard />
-
     </div>
   );
 };
