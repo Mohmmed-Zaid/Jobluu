@@ -13,6 +13,9 @@ import ApplyJobPage from './Pages/ApplyJobPage';
 import CompanyPage from './Pages/CompanyPage';
 import PostedJobPage from './Pages/PostedJobPage';
 import JobHistoryPage from './Pages/JobHistoryPage';
+import SignupPage from './Pages/SignupPage';
+import Profile from './Profile/Profile';
+import ProfilePage from './Pages/ProfilePage';
 
 
 function App() {
@@ -44,6 +47,9 @@ function App() {
           <Route path="company" element={<CompanyPage/>} />
           <Route path="posted-job" element={<PostedJobPage/>} />
           <Route path="job-history" element={<JobHistoryPage/>} />
+          <Route path="signup" element={<SignupPage/>} />
+          <Route path="profile" element={<ProfilePage/>} />
+
 
 
           <Route path="*" element={<HomePages />} /> {/**we cre this wild card route for mainly 404 or not found page */}

@@ -3,6 +3,7 @@ import { IconBell, IconSettings } from "@tabler/icons-react";
 import { Avatar, Indicator } from "@mantine/core";
 import owlLogo from "../assets/owl.png";
 import NavLinks from "./NavLinks";
+import ProfileMenu from "./ProfileMenu";
 
 const Header = () => {
   return (
@@ -18,10 +19,7 @@ const Header = () => {
 
       {/* Icons + User */}
       <div className="flex gap-5 items-center font-roboto">
-        <div className="flex items-center gap-2">
-          <div>Mohmmed Zaid</div>
-          <Avatar src="/avatar.png" alt="You" />
-        </div>
+        <ProfileMenu/>
         <div className="bg-mine-shaft-900 p-1.5 rounded-full">
           <IconSettings stroke={1.5} />
         </div>
