@@ -8,7 +8,13 @@ import {
   IconBookmark,
   IconPencil,
 } from "@tabler/icons-react";
-import { ActionIcon, Modal, TextInput, Textarea, Button } from "@mantine/core";
+import {
+  ActionIcon,
+  Modal,
+  TextInput,
+  Textarea,
+  Button,
+} from "@mantine/core";
 import ExpCard from "./ExpCard";
 import RecommendTalent from "./RecommendTalent";
 import CertificateCard from "./CertificateCard";
@@ -16,7 +22,7 @@ import Header from "../Header/Header";
 import Footer from "../footer/Footer";
 
 const Profile = () => {
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [avatar, setAvatar] = useState("/avatar.png");
   const [editOpen, setEditOpen] = useState(false);
 
@@ -41,7 +47,7 @@ const Profile = () => {
   ]);
   const [newSkill, setNewSkill] = useState("");
 
-  const handleAvatarChange = (e: { target: { files: any[] } }) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) setAvatar(URL.createObjectURL(file));
   };
@@ -50,87 +56,112 @@ const Profile = () => {
     <>
       <Header />
 
-      {/* Modal for editing */}
-      <Modal opened={editOpen} onClose={() => setEditOpen(false)} title="Edit Profile">
-        <TextInput
-          label="Full Name"
-          value={profileData.name}
-          onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-          mb="sm"
-        />
-        <TextInput
-          label="Job Title"
-          value={profileData.title}
-          onChange={(e) => setProfileData({ ...profileData, title: e.target.value })}
-          mb="sm"
-        />
-        <TextInput
-          label="Location"
-          value={profileData.location}
-          onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-          mb="sm"
-        />
-        <TextInput
-          label="Experience"
-          value={profileData.experience}
-          onChange={(e) => setProfileData({ ...profileData, experience: e.target.value })}
-          mb="sm"
-        />
-        <Textarea
-          label="About"
-          value={about}
-          onChange={(e) => setAbout(e.target.value)}
-          autosize
-          minRows={3}
-          mb="sm"
-        />
-        <TextInput
-          label="Add Skill"
-          value={newSkill}
-          onChange={(e) => setNewSkill(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && newSkill.trim()) {
-              e.preventDefault();
-              if (!skills.includes(newSkill.trim())) {
-                setSkills([...skills, newSkill.trim()]);
-                setNewSkill("");
+      {/* Modal for editing profile */}
+      <Modal
+        opened={editOpen}
+        onClose={() => setEditOpen(false)}
+        title="Edit Profile"
+        centered
+        overlayProps={{ blur: 2, backgroundOpacity: 0.55 }}
+        radius="lg"
+        classNames={{
+          body: "bg-mine-shaft-900 text-white",
+          header: "border-b border-slate-700/50 text-yellow-400 font-bold",
+        }}
+      >
+        <div className="space-y-4">
+          <TextInput
+            label="Full Name"
+            variant="filled"
+            radius="md"
+            value={profileData.name}
+            onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+          />
+          <TextInput
+            label="Job Title"
+            variant="filled"
+            radius="md"
+            value={profileData.title}
+            onChange={(e) => setProfileData({ ...profileData, title: e.target.value })}
+          />
+          <TextInput
+            label="Location"
+            variant="filled"
+            radius="md"
+            value={profileData.location}
+            onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+          />
+          <TextInput
+            label="Experience"
+            variant="filled"
+            radius="md"
+            value={profileData.experience}
+            onChange={(e) => setProfileData({ ...profileData, experience: e.target.value })}
+          />
+          <Textarea
+            label="About"
+            variant="filled"
+            radius="md"
+            minRows={3}
+            autosize
+            value={about}
+            onChange={(e) => setAbout(e.target.value)}
+          />
+          <TextInput
+            label="Add Skill"
+            variant="filled"
+            radius="md"
+            value={newSkill}
+            onChange={(e) => setNewSkill(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && newSkill.trim()) {
+                e.preventDefault();
+                if (!skills.includes(newSkill.trim())) {
+                  setSkills([...skills, newSkill.trim()]);
+                  setNewSkill("");
+                }
               }
-            }
-          }}
-          mb="xs"
-        />
-        <div className="flex flex-wrap gap-2 mb-4">
-          {skills.map((skill, i) => (
-            <span
-              key={i}
-              className="flex items-center bg-mine-shaft-800 text-gray-200 px-3 py-1 rounded-full text-sm border border-slate-700/50"
-            >
-              {skill}
-              <button
-                onClick={() => setSkills(skills.filter((_, idx) => idx !== i))}
-                className="ml-2 text-red-400 hover:text-red-300"
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
+            }}
+          />
 
-        <Button onClick={() => setEditOpen(false)} fullWidth mt="md" color="yellow">
-          Save Changes
-        </Button>
+          <div className="flex flex-wrap gap-2">
+            {skills.map((skill, i) => (
+              <span
+                key={i}
+                className="flex items-center bg-mine-shaft-800 text-gray-200 px-3 py-1 rounded-full text-sm border border-slate-700/50"
+              >
+                {skill}
+                <button
+                  onClick={() => setSkills(skills.filter((_, idx) => idx !== i))}
+                  className="ml-2 text-red-400 hover:text-red-300"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+
+          <Button
+            onClick={() => setEditOpen(false)}
+            fullWidth
+            mt="md"
+            color="yellow"
+            className="transition-all hover:scale-105 active:scale-95"
+          >
+            Save Changes
+          </Button>
+        </div>
       </Modal>
 
       <div className="w-full max-w-4xl mx-auto mt-8 mb-16 bg-mine-shaft-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50">
         {/* Banner */}
         <div className="relative">
           <img className="w-full h-48 object-cover" src="/banner.png" alt="Banner" />
-          <div className="absolute inset-0 bg-gradient-to-tr from-yellow-400/10 via-transparent to-yellow-400/5" />
           <div className="absolute top-4 right-4 flex gap-2">
-            <button className="bg-mine-shaft-800/80 hover:bg-mine-shaft-700 p-2 rounded-full">
+            <button className="bg-mine-shaft-800 p-2 rounded-full">
               <IconShare size={18} className="text-yellow-400" />
             </button>
-            <button className="bg-mine-shaft-800/80 hover:bg-mine-shaft-700 p-2 rounded-full">
+            <button className="bg-mine-shaft-800 p-2 rounded-full">
               <IconBookmark size={18} className="text-yellow-400" />
             </button>
           </div>
@@ -167,7 +198,7 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Profile Info */}
+        {/* Profile Main */}
         <div className="pt-24 pb-8 px-8 text-white">
           <div className="flex items-start justify-between mb-6">
             <div>
@@ -236,9 +267,9 @@ const Profile = () => {
           <div className="mb-8">
             <h3 className="text-white font-semibold mb-3 text-lg">Core Skills</h3>
             <div className="flex flex-wrap gap-2">
-              {skills.map((skill) => (
+              {skills.map((skill, index) => (
                 <span
-                  key={skill}
+                  key={index}
                   className="bg-mine-shaft-800 hover:bg-mine-shaft-700 text-gray-300 hover:text-white px-3 py-2 rounded-full text-sm border border-slate-700/50 hover:border-yellow-400/50 transition cursor-pointer"
                 >
                   {skill}
@@ -260,7 +291,7 @@ const Profile = () => {
             </button>
           </div>
 
-          {/* Experience Section */}
+          {/* Experience */}
           <h3 className="text-white font-semibold text-lg mb-4">Experience</h3>
           <ExpCard />
 
@@ -273,6 +304,7 @@ const Profile = () => {
           <RecommendTalent />
         </div>
       </div>
+
       <Footer />
     </>
   );
