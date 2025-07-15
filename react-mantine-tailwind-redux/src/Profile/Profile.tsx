@@ -14,6 +14,7 @@ import {
   TextInput,
   Textarea,
   Button,
+  Tabs,
 } from "@mantine/core";
 import ExpCard from "./ExpCard";
 import RecommendTalent from "./RecommendTalent";
@@ -55,103 +56,151 @@ const Profile = () => {
   return (
     <>
       <Header />
+<Modal
+  opened={editOpen}
+  onClose={() => setEditOpen(false)}
+  withCloseButton={false}
+  centered
+  radius="xl"
+  size="auto"
+  overlayProps={{ blur: 2, backgroundOpacity: 0.6 }}
+  styles={{
+    content: {
+      padding: 0,
+      backgroundColor: "transparent",
+      borderRadius: "1.5rem",
+    },
+  }}
+>
+  <div className="w-[420px] bg-mine-shaft-900 text-white rounded-l-[30px] rounded-r-[40px] overflow-hidden shadow-2xl border border-bright-sun-400">
+    <div className="px-6 py-4 border-b border-slate-700 bg-mine-shaft-800 rounded-tl-3xl">
+      <h2 className="text-lg font-bold text-yellow-400">Edit Profile</h2>
+    </div>
 
-      {/* Modal for editing profile */}
-      <Modal
-        opened={editOpen}
-        onClose={() => setEditOpen(false)}
-        title="Edit Profile"
-        centered
-        overlayProps={{ blur: 2, backgroundOpacity: 0.55 }}
-        radius="lg"
-        classNames={{
-          body: "bg-mine-shaft-900 text-white",
-          header: "border-b border-slate-700/50 text-yellow-400 font-bold",
-        }}
-      >
-        <div className="space-y-4">
-          <TextInput
-            label="Full Name"
-            variant="filled"
-            radius="md"
-            value={profileData.name}
-            onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-          />
-          <TextInput
-            label="Job Title"
-            variant="filled"
-            radius="md"
-            value={profileData.title}
-            onChange={(e) => setProfileData({ ...profileData, title: e.target.value })}
-          />
-          <TextInput
-            label="Location"
-            variant="filled"
-            radius="md"
-            value={profileData.location}
-            onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-          />
-          <TextInput
-            label="Experience"
-            variant="filled"
-            radius="md"
-            value={profileData.experience}
-            onChange={(e) => setProfileData({ ...profileData, experience: e.target.value })}
-          />
-          <Textarea
-            label="About"
-            variant="filled"
-            radius="md"
-            minRows={3}
-            autosize
-            value={about}
-            onChange={(e) => setAbout(e.target.value)}
-          />
-          <TextInput
-            label="Add Skill"
-            variant="filled"
-            radius="md"
-            value={newSkill}
-            onChange={(e) => setNewSkill(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && newSkill.trim()) {
-                e.preventDefault();
-                if (!skills.includes(newSkill.trim())) {
-                  setSkills([...skills, newSkill.trim()]);
-                  setNewSkill("");
-                }
+    {/* Tab Navigation */}
+    <Tabs defaultValue="basic" className="px-6 py-5">
+      <Tabs.List grow className="mb-4">
+        <Tabs.Tab value="basic" className="text-yellow-400">Basic Info</Tabs.Tab>
+        <Tabs.Tab value="about" className="text-yellow-400">About</Tabs.Tab>
+        <Tabs.Tab value="skills" className="text-yellow-400">Skills</Tabs.Tab>
+      </Tabs.List>
+
+      <Tabs.Panel value="basic" className="space-y-4">
+        <TextInput
+          label="Full Name"
+          variant="filled"
+          radius="md"
+          value={profileData.name}
+          onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+          classNames={{
+            input: "bg-mine-shaft-800 text-white border border-slate-700",
+            label: "text-yellow-400 font-semibold",
+          }}
+        />
+        <TextInput
+          label="Job Title"
+          variant="filled"
+          radius="md"
+          value={profileData.title}
+          onChange={(e) => setProfileData({ ...profileData, title: e.target.value })}
+          classNames={{
+            input: "bg-mine-shaft-800 text-white border border-slate-700",
+            label: "text-yellow-400 font-semibold",
+          }}
+        />
+        <TextInput
+          label="Location"
+          variant="filled"
+          radius="md"
+          value={profileData.location}
+          onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+          classNames={{
+            input: "bg-mine-shaft-800 text-white border border-slate-700",
+            label: "text-yellow-400 font-semibold",
+          }}
+        />
+        <TextInput
+          label="Experience"
+          variant="filled"
+          radius="md"
+          value={profileData.experience}
+          onChange={(e) => setProfileData({ ...profileData, experience: e.target.value })}
+          classNames={{
+            input: "bg-mine-shaft-800 text-white border border-slate-700",
+            label: "text-yellow-400 font-semibold",
+          }}
+        />
+      </Tabs.Panel>
+
+      <Tabs.Panel value="about" className="space-y-4">
+        <Textarea
+          label="About"
+          variant="filled"
+          radius="md"
+          minRows={4}
+          autosize
+          value={about}
+          onChange={(e) => setAbout(e.target.value)}
+          classNames={{
+            input: "bg-mine-shaft-800 text-white border border-slate-700",
+            label: "text-yellow-400 font-semibold",
+          }}
+        />
+      </Tabs.Panel>
+
+      <Tabs.Panel value="skills" className="space-y-4">
+        <TextInput
+          label="Add Skill"
+          variant="filled"
+          radius="md"
+          value={newSkill}
+          onChange={(e) => setNewSkill(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && newSkill.trim()) {
+              e.preventDefault();
+              if (!skills.includes(newSkill.trim())) {
+                setSkills([...skills, newSkill.trim()]);
+                setNewSkill("");
               }
-            }}
-          />
-
-          <div className="flex flex-wrap gap-2">
-            {skills.map((skill, i) => (
-              <span
-                key={i}
-                className="flex items-center bg-mine-shaft-800 text-gray-200 px-3 py-1 rounded-full text-sm border border-slate-700/50"
+            }
+          }}
+          classNames={{
+            input: "bg-mine-shaft-800 text-white border border-slate-700",
+            label: "text-yellow-400 font-semibold",
+          }}
+        />
+        <div className="flex flex-wrap gap-2">
+          {skills.map((skill, i) => (
+            <span
+              key={i}
+              className="flex items-center bg-mine-shaft-800 text-gray-200 px-3 py-1 rounded-full text-sm border border-slate-700 hover:border-yellow-400 transition-all"
+            >
+              {skill}
+              <button
+                onClick={() => setSkills(skills.filter((_, idx) => idx !== i))}
+                className="ml-2 text-red-400 hover:text-red-300"
               >
-                {skill}
-                <button
-                  onClick={() => setSkills(skills.filter((_, idx) => idx !== i))}
-                  className="ml-2 text-red-400 hover:text-red-300"
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-
-          <Button
-            onClick={() => setEditOpen(false)}
-            fullWidth
-            mt="md"
-            color="yellow"
-            className="transition-all hover:scale-105 active:scale-95"
-          >
-            Save Changes
-          </Button>
+                ×
+              </button>
+            </span>
+          ))}
         </div>
-      </Modal>
+      </Tabs.Panel>
+    </Tabs>
+
+    <div className="px-6 pb-5">
+      <Button
+        onClick={() => setEditOpen(false)}
+        fullWidth
+        radius="md"
+        className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold transition-all hover:scale-105 active:scale-95"
+      >
+        Save Changes
+      </Button>
+    </div>
+  </div>
+</Modal>
+
 
       <div className="w-full max-w-4xl mx-auto mt-8 mb-16 bg-mine-shaft-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50">
         {/* Banner */}
