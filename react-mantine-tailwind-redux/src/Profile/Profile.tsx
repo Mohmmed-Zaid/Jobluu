@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef } from "react";
 import {
   IconMapPin,
   IconStar,
@@ -10,51 +10,99 @@ import {
   IconBookmark,
   IconPencil,
 } from "@tabler/icons-react";
+import { ActionIcon, Modal, TextInput, Button } from "@mantine/core";
 import ExpCard from "./ExpCard";
 import RecommendTalent from "./RecommendTalent";
+import CertificateCard from "./CertificateCard";
 import Header from "../Header/Header";
 import Footer from "../footer/Footer";
-import { ActionIcon } from "@mantine/core";
 
 const Profile = () => {
+  const fileInputRef = useRef(null);
+  const [avatar, setAvatar] = useState("/avatar.png");
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: "Jarrod Wood",
+    title: "Software Engineer",
+    location: "Pune, India",
+    experience: "5+ Years Experience",
+  });
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) setAvatar(URL.createObjectURL(file));
+  };
+
   return (
     <>
-      {/* Top Header */}
       <Header />
+      <Modal opened={editOpen} onClose={() => setEditOpen(false)} title="Edit Profile">
+        <TextInput
+          label="Full Name"
+          value={profileData.name}
+          onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+          mb="sm"
+        />
+        <TextInput
+          label="Job Title"
+          value={profileData.title}
+          onChange={(e) => setProfileData({ ...profileData, title: e.target.value })}
+          mb="sm"
+        />
+        <TextInput
+          label="Location"
+          value={profileData.location}
+          onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+          mb="sm"
+        />
+        <TextInput
+          label="Experience"
+          value={profileData.experience}
+          onChange={(e) => setProfileData({ ...profileData, experience: e.target.value })}
+          mb="sm"
+        />
+        <Button onClick={() => setEditOpen(false)} fullWidth mt="md" color="yellow">
+          Save Changes
+        </Button>
+      </Modal>
 
-      {/* Main Profile Section */}
       <div className="w-full max-w-4xl mx-auto mt-8 mb-16 bg-mine-shaft-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50">
         {/* Banner */}
         <div className="relative">
-          <img
-            className="w-full h-48 object-cover"
-            src="/banner.png"
-            alt="Banner"
-            onError={(e) => (e.currentTarget.style.display = "none")}
-          />
+          <img className="w-full h-48 object-cover" src="/banner.png" alt="Banner" />
           <div className="absolute inset-0 bg-gradient-to-tr from-yellow-400/10 via-transparent to-yellow-400/5" />
           <div className="absolute top-4 right-4 flex gap-2">
-            <button className="bg-mine-shaft-800/80 hover:bg-mine-shaft-700 p-2 rounded-full backdrop-blur-sm transition-all hover:scale-110">
+            <button className="bg-mine-shaft-800/80 hover:bg-mine-shaft-700 p-2 rounded-full">
               <IconShare size={18} className="text-yellow-400" />
             </button>
-            <button className="bg-mine-shaft-800/80 hover:bg-mine-shaft-700 p-2 rounded-full backdrop-blur-sm transition-all hover:scale-110">
+            <button className="bg-mine-shaft-800/80 hover:bg-mine-shaft-700 p-2 rounded-full">
               <IconBookmark size={18} className="text-yellow-400" />
             </button>
           </div>
 
           {/* Avatar */}
           <div className="absolute -bottom-20 left-8">
-            <div className="relative">
+            <div className="relative group">
               <img
                 className="w-40 h-40 rounded-full border-6 border-mine-shaft-900 shadow-2xl object-cover ring-4 ring-yellow-400/20"
-                src="/avatar.png"
+                src={avatar}
                 alt="Avatar"
-                onError={(e) =>
-                  (e.currentTarget.src =
-                    "https://placehold.co/160x160/4f4f4f/ffffff?text=JW")
-                }
               />
-              <div className="absolute bottom-4 right-4 w-6 h-6 bg-green-500 rounded-full border-4 border-mine-shaft-900 animate-pulse shadow-lg" />
+              <input
+                type="file"
+                hidden
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={handleAvatarChange}
+              />
+              <ActionIcon
+                variant="filled"
+                className="absolute bottom-2 right-2 bg-yellow-400 hover:bg-yellow-500"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <IconPencil size={16} />
+              </ActionIcon>
               <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
                 <div className="flex items-center bg-yellow-400 text-black px-3 py-1 rounded-full text-xs font-bold shadow-lg">
                   <IconStar size={12} className="mr-1" />
@@ -65,46 +113,41 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Main Info */}
-        <div className="pt-24 pb-8 px-8">
-          <div className="text-white mb-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                  Jarrod Wood
-                </h2>
-                <p className="text-lg text-yellow-400 font-semibold mt-1">Software Engineer</p>
-                <div className="flex items-center gap-4 mt-3 text-sm text-gray-400">
-                  <div className="flex items-center">
-                    <IconBriefcase size={16} className="mr-1.5 text-yellow-400" />
-                    5+ Years Experience
-                  </div>
-                  <div className="flex items-center">
-                    <IconCalendar size={16} className="mr-1.5 text-yellow-400" />
-                    Available Now
-                  </div>
+        {/* Profile Main Info */}
+        <div className="pt-24 pb-8 px-8 text-white">
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h2 className="text-3xl font-bold text-gradient bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                {profileData.name}
+              </h2>
+              <p className="text-lg text-yellow-400 font-semibold mt-1">{profileData.title}</p>
+              <div className="flex items-center gap-4 mt-3 text-sm text-gray-400">
+                <div className="flex items-center">
+                  <IconBriefcase size={16} className="mr-1.5 text-yellow-400" />
+                  {profileData.experience}
+                </div>
+                <div className="flex items-center">
+                  <IconCalendar size={16} className="mr-1.5 text-yellow-400" />
+                  Available Now
                 </div>
               </div>
-<div className="flex flex-col gap-2">
-  {/* Phone Button */}
-  <ActionIcon
-    variant="subtle"
-    color="yellow"
-    radius="xl"
-    size="lg"
-    className="bg-mine-shaft-800 hover:bg-mine-shaft-700 p-2 transition hover:scale-110"
-  >
-    <IconPencil size={20} />
-  </ActionIcon>
-</div>
-
-
             </div>
+            <ActionIcon
+              variant="subtle"
+              color="yellow"
+              radius="xl"
+              size="lg"
+              className="bg-mine-shaft-800 hover:bg-mine-shaft-700 p-2 transition hover:scale-110"
+              onClick={() => setEditOpen(true)}
+            >
+              <IconPencil size={20} />
+            </ActionIcon>
           </div>
 
+          {/* Location */}
           <div className="flex items-center text-gray-300 mb-6 bg-mine-shaft-800/50 px-4 py-3 rounded-xl border border-slate-700/50">
             <IconMapPin className="h-5 w-5 mr-2 text-yellow-400" />
-            <span className="font-medium">Pune, India</span>
+            <span className="font-medium">{profileData.location}</span>
             <span className="ml-auto text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
               Open to Remote
             </span>
@@ -154,8 +197,8 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-4">
+          {/* Buttons */}
+          <div className="flex gap-4 mb-8">
             <button className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold text-sm px-6 py-3 rounded-xl transition hover:scale-105 active:scale-95">
               Connect Now
             </button>
@@ -167,16 +210,19 @@ const Profile = () => {
             </button>
           </div>
 
-          {/* Experience Card */}
-          <h3 className="text-white font-semibold text-lg mb-4 mt-8">Experience</h3>
+          {/* Experience Section */}
+          <h3 className="text-white font-semibold text-lg mb-4">Experience</h3>
           <ExpCard />
 
-          {/* Recommend Talent Card */}
+          {/* Certification Section */}
+          <h3 className="text-white font-semibold text-lg mb-4 mt-8">Certifications</h3>
+          <CertificateCard />
+
+          {/* Recommended Talent */}
+          <h3 className="text-white font-semibold text-lg mb-4 mt-8">Recommended Talent</h3>
           <RecommendTalent />
         </div>
       </div>
-
-      {/* Bottom Footer */}
       <Footer />
     </>
   );
