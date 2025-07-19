@@ -15,7 +15,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class User {
 
     @Id
-    private String id;
+    private Long id;
     private String name;
     @Indexed(unique = true)//email should be unique for every user
     private String email;
