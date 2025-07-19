@@ -20,6 +20,7 @@
     "@tiptap/starter-kit": "^2.25.0",
     "@types/node": "^24.0.10",
     "autoprefixer": "^10.4.20",
+    "axios": "^1.10.0",
     "crypto-js": "^4.2.0",
     "framer-motion": "^12.23.5",
     "lucide-react": "^0.525.0",
