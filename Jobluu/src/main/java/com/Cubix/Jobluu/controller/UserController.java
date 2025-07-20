@@ -1,14 +1,14 @@
 package com.Cubix.Jobluu.controller;
 
 import com.Cubix.Jobluu.dto.LoginDto;
+import com.Cubix.Jobluu.dto.ResponseDto;
 import com.Cubix.Jobluu.dto.UserDto;
 import com.Cubix.Jobluu.exception.JobluuException;
 import com.Cubix.Jobluu.service.UserService;
+import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -33,4 +33,11 @@ public class UserController {
         return new ResponseEntity<>(userService.loginUser(loginDto), HttpStatus.OK);
 
     }
+    @PostMapping("sendOTP/{email}")
+    public ResponseEntity<ResponseDto> sendOTP(@PathVariable String email) throws Exception{
+        userService.sendOTP(email);
+        return new ResponseEntity<>(new ResponseDto("OTP sent Successfully."), HttpStatus.OK);
+
+    }
+
 }
