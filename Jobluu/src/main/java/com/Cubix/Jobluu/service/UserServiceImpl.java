@@ -1,6 +1,7 @@
 package com.Cubix.Jobluu.service;
 
 import com.Cubix.Jobluu.dto.LoginDto;
+import com.Cubix.Jobluu.dto.ResponseDto;
 import com.Cubix.Jobluu.dto.UserDto;
 import com.Cubix.Jobluu.entities.OTP;
 import com.Cubix.Jobluu.entities.User;
@@ -67,6 +68,37 @@ public class UserServiceImpl implements UserService {
         return user.toDto();
     }
 
+
+    @Override
+    public ResponseDto changePassword(LoginDto loginDto) throws JobluuException {
+        String email = loginDto.getEmail();
+        String newPassword = loginDto.getPassword();
+
+        // Validate input
+        if (email == null || email.trim().isEmpty()) {
+            throw new JobluuException("EMAIL_REQUIRED");
+        }
+
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new JobluuException("PASSWORD_REQUIRED");
+        }
+
+        // Validate password strength (optional)
+        if (newPassword.length() < 6) {
+            throw new JobluuException("PASSWORD_TOO_SHORT");
+        }
+
+        // Check if user exists
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new JobluuException("USER_NOT_FOUND"));
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(newPassword)); // Assuming you have password encoder
+        userRepository.save(user);
+
+        return new ResponseDto("PASSWORD_CHANGED_SUCCESSFULLY", true);
+    }
+
     @Override
     public Boolean sendOTP(String email) throws Exception{
         User user = userRepository.findByEmail(email).orElseThrow(()->new JobluuException("USER_NOT_FOUND"));
@@ -81,6 +113,13 @@ public class UserServiceImpl implements UserService {
         mailSender.send(mm);
         return true;
 
+    }
+
+    @Override
+    public Boolean verifyOTP(String email, String otp) throws JobluuException {
+        OTP otpEntity = otpRepository.findById(email).orElseThrow(()->new JobluuException("OTP_NOT_FOUND"));
+        if (!otpEntity.getOtpCode().equals(otp))throw new JobluuException("OTP_INCORRECT");
+        return true;
     }
 
 }

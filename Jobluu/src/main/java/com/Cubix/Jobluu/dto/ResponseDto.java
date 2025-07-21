@@ -1,12 +1,14 @@
 package com.Cubix.Jobluu.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class ResponseDto {
-    String message;
+    private String message;
+    private Boolean succes;
+
+
+
 }
