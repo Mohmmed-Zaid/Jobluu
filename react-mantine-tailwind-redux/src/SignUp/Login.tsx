@@ -1,24 +1,27 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
+import { loginUser } from "../Services/UserService";
+import ResetPassword from './ResetPassword';
 
 interface LoginProps {
   onSwitchToSignup: () => void;
+  onSwitchToResetPassword: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
+const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState("");
+  const [messageType, setMessageType] = useState<"error" | "success" | "info" | "">("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
 
-  // Toggles the visibility of the password input field.
   const togglePassword = () => setShowPassword((prev) => !prev);
 
-  // Handles changes to input fields and updates the form data state.
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -27,35 +30,54 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
     }));
   };
 
-  // Handles the form submission for login.
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In a real application, you would send this data to your backend for authentication.
-    console.log("Login Attempt:", formData);
-
-    // Simulate an asynchronous login process.
-    setMessage("Logging in...");
-    setMessageType("info"); // A new message type for ongoing process
+  const showMessage = (msg: string, type: "error" | "success" | "info") => {
+    setMessage(msg);
+    setMessageType(type);
     setTimeout(() => {
-      // Simulate successful login
-      setMessage("Login successful!");
-      setMessageType("success");
-      setTimeout(() => {
-        setMessage("");
-        setMessageType("");
-        // In a real app, you'd redirect the user or update global authentication state here.
-      }, 3000);
-    }, 1500); // Simulate network delay
+      setMessage("");
+      setMessageType("");
+    }, 3000);
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    showMessage("Logging in...", "info");
+
+    try {
+      const loginData = {
+        email: formData.email,
+        password: formData.password,
+      };
+
+      console.log("Login Attempt:", loginData);
+
+      const result = await loginUser(loginData);
+      showMessage("Login successful!", "success");
+
+      setTimeout(() => {
+        window.location.href = "http://localhost:5173/";
+      }, 1500);
+
+    } catch (error: any) {
+      console.error('Login error:', error);
+      const errorMessage = error?.message || "Login failed. Please try again.";
+      showMessage(errorMessage, "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openReset = () => setResetOpen(true);
+  const closeReset = () => setResetOpen(false);
+
   return (
-    // motion.form is used for Framer Motion animations.
     <motion.form
-      key="login" // Unique key is crucial for AnimatePresence to track component changes.
-      initial={{ x: 500, opacity: 0 }} // Starts 500px to the right and invisible.
-      animate={{ x: 0, opacity: 1 }}    // Animates to its final position (x: 0) and full opacity.
-      exit={{ x: -500, opacity: 0 }}    // When exiting, animates 500px to the left and fades out.
-      transition={{ duration: 0.5 }}    // Animation duration of 0.5 seconds.
+      key="login"
+      initial={{ x: 500, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: -500, opacity: 0 }}
+      transition={{ duration: 0.5 }}
       onSubmit={handleSubmit}
       className="w-full max-w-md space-y-6 bg-mine-shaft-950/70 p-8 rounded-xl border border-mine-shaft-850 shadow-2xl backdrop-blur-sm"
     >
@@ -67,8 +89,15 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
       {/* Message Notification */}
       {message && (
         <div
-          className={`px-4 py-2 rounded-lg text-sm font-medium animate-fade-in-down
-            ${messageType === "error" ? "bg-red-600" : messageType === "success" ? "bg-green-600" : "bg-blue-600"} shadow-md`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium animate-fade-in-down ${
+            messageType === "error"
+              ? "bg-red-600 text-white"
+              : messageType === "success"
+              ? "bg-green-600 text-white"
+              : messageType === "info"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-600 text-white"
+          } shadow-md`}
         >
           {message}
         </div>
@@ -107,34 +136,53 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup }) => {
             placeholder="••••••••"
             className="w-full px-4 py-3 bg-transparent border border-mine-shaft-850 rounded-md text-white placeholder-gray-500 pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-300"
           />
-          <span
+          <button
+            type="button"
             onClick={togglePassword}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400 cursor-pointer"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400 cursor-pointer transition-colors"
           >
             {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </span>
+          </button>
         </div>
       </div>
 
       {/* Login Button */}
       <button
         type="submit"
-        className="w-full py-3 bg-yellow-500 text-black font-semibold rounded-md hover:bg-yellow-400 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-yellow-400"
+        disabled={isLoading}
+        className={`w-full py-3 font-semibold rounded-md transition-all duration-300 shadow-md focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+          isLoading
+            ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+            : "bg-yellow-500 text-black hover:bg-yellow-400"
+        }`}
       >
-        Login
+        {isLoading ? "Logging in..." : "Login"}
       </button>
 
-      {/* Link to Signup Page */}
-      <p className="text-center text-sm text-gray-400">
+      {/* Forgot Password Link */}
+      <div className="text-center mt-4">
+        <button
+          type="button"
+          onClick={openReset}
+          className="text-sm text-bright-sun-400 hover:underline cursor-pointer"
+        >
+          Forgot Password?
+        </button>
+      </div>
+
+      {/* Link to Signup Page - FIXED */}
+      <p className="text-center text-sm text-gray-400 mt-4">
         Don't have an account?{" "}
-        <a
-          href="#"
-          onClick={onSwitchToSignup} // Calls the parent's function to switch to signup form.
+        <button
+          type="button"
+          onClick={onSwitchToSignup}
           className="text-yellow-400 underline hover:text-yellow-300"
         >
           Sign Up
-        </a>
+        </button>
       </p>
+
+      <ResetPassword opened={resetOpen} close={closeReset} />
     </motion.form>
   );
 };
