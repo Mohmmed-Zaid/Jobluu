@@ -32,6 +32,8 @@ public class UserDto {
 
     private AccountType accountType;
 
+    private String profileId;
+
     public User toEntity() {
         User user = new User();
         user.setId(this.id);
@@ -39,6 +41,7 @@ public class UserDto {
         user.setEmail(this.email);
         user.setPassword(this.password);
         user.setAccountType(this.accountType);
+        user.setProfileId(this.profileId);
         return user;
     }
 }

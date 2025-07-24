@@ -10,7 +10,6 @@ import com.Cubix.Jobluu.repositories.OTPRepository;
 import com.Cubix.Jobluu.repositories.UserRepository;
 import com.Cubix.Jobluu.utility.Data;
 import com.Cubix.Jobluu.utility.Utilities;
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -38,24 +37,22 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private JavaMailSender mailSender;
 
+    @Autowired
+    private ProfileService profileService;
+
     @Override
     public UserDto registerUser(UserDto userDto) throws JobluuException {
-        // Check if user already exists by email (not password!)
         Optional<User> optional = userRepository.findByEmail(userDto.getEmail());
         if (optional.isPresent()) {
             throw new JobluuException("USER_FOUND");
         }
 
-        // Set ID using utility method
+        userDto.setProfileId(profileService.createProfile(userDto.getEmail()));
         userDto.setId(Utilities.getNextSequence("users"));
-
-        // Encode password
         userDto.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
-        // Convert to entity and save
         User user = userDto.toEntity();
         user = userRepository.save(user);
-
         return user.toDto();
     }
 
@@ -71,32 +68,25 @@ public class UserServiceImpl implements UserService {
         return user.toDto();
     }
 
-
     @Override
     public ResponseDto changePassword(LoginDto loginDto) throws JobluuException {
         String email = loginDto.getEmail();
         String newPassword = loginDto.getPassword();
 
-        // Validate input
         if (email == null || email.trim().isEmpty()) {
             throw new JobluuException("EMAIL_REQUIRED");
         }
-
         if (newPassword == null || newPassword.trim().isEmpty()) {
             throw new JobluuException("PASSWORD_REQUIRED");
         }
-
-        // Validate password strength (optional)
         if (newPassword.length() < 6) {
             throw new JobluuException("PASSWORD_TOO_SHORT");
         }
 
-        // Check if user exists
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new JobluuException("USER_NOT_FOUND"));
 
-        // Update password
-        user.setPassword(passwordEncoder.encode(newPassword)); // Assuming you have password encoder
+        user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
         return new ResponseDto("PASSWORD_CHANGED_SUCCESSFULLY", true);
@@ -104,7 +94,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Boolean sendOTP(String email) throws Exception {
-        User user = userRepository.findByEmail(email)
+        userRepository.findByEmail(email)
                 .orElseThrow(() -> new JobluuException("USER_NOT_FOUND"));
 
         String genOtp = Utilities.generateOTP();
@@ -115,18 +105,21 @@ public class UserServiceImpl implements UserService {
         MimeMessageHelper message = new MimeMessageHelper(mm, true);
         message.setTo(email);
         message.setSubject("Verify your Jobluu Account");
-
         message.setText(Data.getMessageBody(email, genOtp), true);
 
         mailSender.send(mm);
         return true;
     }
 
-
     @Override
     public Boolean verifyOTP(String email, String otp) throws JobluuException {
-        OTP otpEntity = otpRepository.findById(email).orElseThrow(()->new JobluuException("OTP_NOT_FOUND"));
-        if (!otpEntity.getOtpCode().equals(otp))throw new JobluuException("OTP_INCORRECT");
+        OTP otpEntity = otpRepository.findById(email)
+                .orElseThrow(() -> new JobluuException("OTP_NOT_FOUND"));
+
+        if (!otpEntity.getOtpCode().equals(otp)) {
+            throw new JobluuException("OTP_INCORRECT");
+        }
+
         return true;
     }
 
@@ -136,9 +129,7 @@ public class UserServiceImpl implements UserService {
         List<OTP> expiredOTP = otpRepository.findByCreationTimeBefore(expiry);
         if (!expiredOTP.isEmpty()) {
             otpRepository.deleteAll(expiredOTP);
-            System.out.println("Removed " + expiredOTP.size() + " expired OTP.");
+            System.out.println("Removed " + expiredOTP.size() + " expired OTP(s).");
         }
     }
-
-
 }

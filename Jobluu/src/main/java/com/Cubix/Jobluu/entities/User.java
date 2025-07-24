@@ -22,9 +22,10 @@ public class User {
     private String password;
 
     private AccountType accountType;
+    private String profileId;
 
     public UserDto toDto(){
-        return new UserDto(this.id,this.name,this.email,this.password,this.accountType);
+        return new UserDto(this.id,this.name,this.email,this.password,this.accountType,this.profileId);
 
     }
 
