@@ -41,6 +41,13 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation - check if fields are filled
+    if (!formData.email || !formData.password) {
+      showMessage("Please fill in all fields.", "error");
+      return;
+    }
+
     setIsLoading(true);
     showMessage("Logging in...", "info");
 
@@ -61,7 +68,7 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
 
     } catch (error: any) {
       console.error('Login error:', error);
-      const errorMessage = error?.message || "Login failed. Please try again.";
+      const errorMessage = error?.errorMessage || error?.message || "Login failed. Please try again.";
       showMessage(errorMessage, "error");
     } finally {
       setIsLoading(false);
@@ -72,118 +79,121 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
   const closeReset = () => setResetOpen(false);
 
   return (
-    <motion.form
-      key="login"
-      initial={{ x: 500, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: -500, opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      onSubmit={handleSubmit}
-      className="w-full max-w-md space-y-6 bg-mine-shaft-950/70 p-8 rounded-xl border border-mine-shaft-850 shadow-2xl backdrop-blur-sm"
-    >
-      <div>
-        <h2 className="text-3xl font-bold text-white mb-1">Welcome Back!</h2>
-        <p className="text-sm text-gray-400">Sign in to your JobHook account.</p>
-      </div>
-
-      {/* Message Notification */}
-      {message && (
-        <div
-          className={`px-4 py-2 rounded-lg text-sm font-medium animate-fade-in-down ${
-            messageType === "error"
-              ? "bg-red-600 text-white"
-              : messageType === "success"
-              ? "bg-green-600 text-white"
-              : messageType === "info"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-600 text-white"
-          } shadow-md`}
-        >
-          {message}
+    <>
+      <motion.form
+        key="login"
+        initial={{ x: 500, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: -500, opacity: 0 }}
+        transition={{ duration: 0.5 }}
+        onSubmit={handleSubmit}
+        className="w-full max-w-md space-y-6 bg-mine-shaft-950/70 p-8 rounded-xl border border-mine-shaft-850 shadow-2xl backdrop-blur-sm"
+      >
+        <div>
+          <h2 className="text-3xl font-bold text-white mb-1">Welcome Back!</h2>
+          <p className="text-sm text-gray-400">Sign in to your JobHook account.</p>
         </div>
-      )}
 
-      {/* Input - Email */}
-      <div>
-        <label htmlFor="login-email" className="text-sm text-gray-300 mb-1 block">
-          Email <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="email"
-          id="login-email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          placeholder="you@example.com"
-          className="w-full px-4 py-3 bg-transparent border border-mine-shaft-850 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-300"
-        />
-      </div>
+        {/* Message Notification */}
+        {message && (
+          <div
+            className={`px-4 py-2 rounded-lg text-sm font-medium animate-fade-in-down ${
+              messageType === "error"
+                ? "bg-red-600 text-white"
+                : messageType === "success"
+                ? "bg-green-600 text-white"
+                : messageType === "info"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-600 text-white"
+            } shadow-md`}
+          >
+            {message}
+          </div>
+        )}
 
-      {/* Input - Password */}
-      <div>
-        <label htmlFor="login-password" className="text-sm text-gray-300 mb-1 block">
-          Password <span className="text-red-500">*</span>
-        </label>
-        <div className="relative">
+        {/* Input - Email */}
+        <div>
+          <label htmlFor="login-email" className="text-sm text-gray-300 mb-1 block">
+            Email <span className="text-red-500">*</span>
+          </label>
           <input
-            type={showPassword ? "text" : "password"}
-            id="login-password"
-            name="password"
-            value={formData.password}
+            type="email"
+            id="login-email"
+            name="email"
+            value={formData.email}
             onChange={handleChange}
             required
-            placeholder="••••••••"
-            className="w-full px-4 py-3 bg-transparent border border-mine-shaft-850 rounded-md text-white placeholder-gray-500 pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-300"
+            placeholder="you@example.com"
+            className="w-full px-4 py-3 bg-transparent border border-mine-shaft-850 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-300"
           />
+        </div>
+
+        {/* Input - Password */}
+        <div>
+          <label htmlFor="login-password" className="text-sm text-gray-300 mb-1 block">
+            Password <span className="text-red-500">*</span>
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              id="login-password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              placeholder="••••••••"
+              className="w-full px-4 py-3 bg-transparent border border-mine-shaft-850 rounded-md text-white placeholder-gray-500 pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-300"
+            />
+            <button
+              type="button"
+              onClick={togglePassword}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400 cursor-pointer transition-colors"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Login Button */}
+        <button
+          type="submit"
+          disabled={isLoading}
+          className={`w-full py-3 font-semibold rounded-md transition-all duration-300 shadow-md focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+            isLoading
+              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+              : "bg-yellow-500 text-black hover:bg-yellow-400"
+          }`}
+        >
+          {isLoading ? "Logging in..." : "Login"}
+        </button>
+
+        {/* Forgot Password Link */}
+        <div className="text-center mt-4">
           <button
             type="button"
-            onClick={togglePassword}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400 cursor-pointer transition-colors"
+            onClick={openReset}
+            className="text-sm text-bright-sun-400 hover:underline cursor-pointer"
           >
-            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            Forgot Password?
           </button>
         </div>
-      </div>
 
-      {/* Login Button */}
-      <button
-        type="submit"
-        disabled={isLoading}
-        className={`w-full py-3 font-semibold rounded-md transition-all duration-300 shadow-md focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
-          isLoading
-            ? "bg-gray-600 text-gray-400 cursor-not-allowed"
-            : "bg-yellow-500 text-black hover:bg-yellow-400"
-        }`}
-      >
-        {isLoading ? "Logging in..." : "Login"}
-      </button>
+        {/* Link to Signup Page */}
+        <p className="text-center text-sm text-gray-400 mt-4">
+          Don't have an account?{" "}
+          <button
+            type="button"
+            onClick={onSwitchToSignup}
+            className="text-yellow-400 underline hover:text-yellow-300"
+          >
+            Sign Up
+          </button>
+        </p>
+      </motion.form>
 
-      {/* Forgot Password Link */}
-      <div className="text-center mt-4">
-        <button
-          type="button"
-          onClick={openReset}
-          className="text-sm text-bright-sun-400 hover:underline cursor-pointer"
-        >
-          Forgot Password?
-        </button>
-      </div>
-
-      {/* Link to Signup Page - FIXED */}
-      <p className="text-center text-sm text-gray-400 mt-4">
-        Don't have an account?{" "}
-        <button
-          type="button"
-          onClick={onSwitchToSignup}
-          className="text-yellow-400 underline hover:text-yellow-300"
-        >
-          Sign Up
-        </button>
-      </p>
-
+      {/* Reset Password Modal */}
       <ResetPassword opened={resetOpen} close={closeReset} />
-    </motion.form>
+    </>
   );
 };
 
