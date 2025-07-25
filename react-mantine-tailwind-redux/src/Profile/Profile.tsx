@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   IconMapPin,
   IconStar,
@@ -26,6 +26,7 @@ const Profile = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [avatar, setAvatar] = useState("/avatar.png");
   const [editOpen, setEditOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [profileData, setProfileData] = useState({
     name: "Jarrod Wood",
@@ -48,159 +49,224 @@ const Profile = () => {
   ]);
   const [newSkill, setNewSkill] = useState("");
 
+  // Fixed useEffect with proper dependency array and error handling
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+        // Make sure 'user' and 'getProfile' are properly imported/defined
+        const data = await getProfile(user.id);
+        console.log('Profile data:', data);
+        
+        // Update state with fetched data
+        if (data) {
+          setProfileData({
+            name: data.name || profileData.name,
+            title: data.title || profileData.title,
+            location: data.location || profileData.location,
+            experience: data.experience || profileData.experience,
+          });
+          
+          if (data.about) setAbout(data.about);
+          if (data.skills) setSkills(data.skills);
+          if (data.avatar) setAvatar(data.avatar);
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        // You might want to show a toast notification or error message to user
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []); // Empty dependency array means this runs once on mount
+
+  // Function to save profile changes
+  const handleSaveProfile = async () => {
+    try {
+      const profilePayload = {
+        ...profileData,
+        about,
+        skills,
+        avatar,
+      };
+      
+      const response = await saveProfile(user.id, profilePayload);
+      console.log('Profile saved:', response);
+      setEditOpen(false);
+      // You might want to show a success message
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      // You might want to show an error message
+    }
+  };
+
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) setAvatar(URL.createObjectURL(file));
   };
 
+  // Show loading state while fetching data
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <div className="w-full max-w-4xl mx-auto mt-8 mb-16 bg-mine-shaft-900 rounded-2xl p-8 text-center">
+          <div className="text-white">Loading profile...</div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <Header />
-<Modal
-  opened={editOpen}
-  onClose={() => setEditOpen(false)}
-  withCloseButton={false}
-  centered
-  radius="xl"
-  size="auto"
-  overlayProps={{ blur: 2, backgroundOpacity: 0.6 }}
-  styles={{
-    content: {
-      padding: 0,
-      backgroundColor: "transparent",
-      borderRadius: "1.5rem",
-    },
-  }}
->
-  <div className="w-[420px] bg-mine-shaft-900 text-white rounded-l-[30px] rounded-r-[40px] overflow-hidden shadow-2xl border border-bright-sun-400">
-    <div className="px-6 py-4 border-b border-slate-700 bg-mine-shaft-800 rounded-tl-3xl">
-      <h2 className="text-lg font-bold text-yellow-400">Edit Profile</h2>
-    </div>
-
-    {/* Tab Navigation */}
-    <Tabs defaultValue="basic" className="px-6 py-5">
-      <Tabs.List grow className="mb-4">
-        <Tabs.Tab value="basic" className="text-yellow-400">Basic Info</Tabs.Tab>
-        <Tabs.Tab value="about" className="text-yellow-400">About</Tabs.Tab>
-        <Tabs.Tab value="skills" className="text-yellow-400">Skills</Tabs.Tab>
-      </Tabs.List>
-
-      <Tabs.Panel value="basic" className="space-y-4">
-        <TextInput
-          label="Full Name"
-          variant="filled"
-          radius="md"
-          value={profileData.name}
-          onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-          classNames={{
-            input: "bg-mine-shaft-800 text-white border border-slate-700",
-            label: "text-yellow-400 font-semibold",
-          }}
-        />
-        <TextInput
-          label="Job Title"
-          variant="filled"
-          radius="md"
-          value={profileData.title}
-          onChange={(e) => setProfileData({ ...profileData, title: e.target.value })}
-          classNames={{
-            input: "bg-mine-shaft-800 text-white border border-slate-700",
-            label: "text-yellow-400 font-semibold",
-          }}
-        />
-        <TextInput
-          label="Location"
-          variant="filled"
-          radius="md"
-          value={profileData.location}
-          onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-          classNames={{
-            input: "bg-mine-shaft-800 text-white border border-slate-700",
-            label: "text-yellow-400 font-semibold",
-          }}
-        />
-        <TextInput
-          label="Experience"
-          variant="filled"
-          radius="md"
-          value={profileData.experience}
-          onChange={(e) => setProfileData({ ...profileData, experience: e.target.value })}
-          classNames={{
-            input: "bg-mine-shaft-800 text-white border border-slate-700",
-            label: "text-yellow-400 font-semibold",
-          }}
-        />
-      </Tabs.Panel>
-
-      <Tabs.Panel value="about" className="space-y-4">
-        <Textarea
-          label="About"
-          variant="filled"
-          radius="md"
-          minRows={4}
-          autosize
-          value={about}
-          onChange={(e) => setAbout(e.target.value)}
-          classNames={{
-            input: "bg-mine-shaft-800 text-white border border-slate-700",
-            label: "text-yellow-400 font-semibold",
-          }}
-        />
-      </Tabs.Panel>
-
-      <Tabs.Panel value="skills" className="space-y-4">
-        <TextInput
-          label="Add Skill"
-          variant="filled"
-          radius="md"
-          value={newSkill}
-          onChange={(e) => setNewSkill(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && newSkill.trim()) {
-              e.preventDefault();
-              if (!skills.includes(newSkill.trim())) {
-                setSkills([...skills, newSkill.trim()]);
-                setNewSkill("");
-              }
-            }
-          }}
-          classNames={{
-            input: "bg-mine-shaft-800 text-white border border-slate-700",
-            label: "text-yellow-400 font-semibold",
-          }}
-        />
-        <div className="flex flex-wrap gap-2">
-          {skills.map((skill, i) => (
-            <span
-              key={i}
-              className="flex items-center bg-mine-shaft-800 text-gray-200 px-3 py-1 rounded-full text-sm border border-slate-700 hover:border-yellow-400 transition-all"
-            >
-              {skill}
-              <button
-                onClick={() => setSkills(skills.filter((_, idx) => idx !== i))}
-                className="ml-2 text-red-400 hover:text-red-300"
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-      </Tabs.Panel>
-    </Tabs>
-
-    <div className="px-6 pb-5">
-      <Button
-        onClick={() => setEditOpen(false)}
-        fullWidth
-        radius="md"
-        className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold transition-all hover:scale-105 active:scale-95"
+      <Modal
+        opened={editOpen}
+        onClose={() => setEditOpen(false)}
+        withCloseButton={false}
+        centered
+        radius="xl"
+        size="auto"
+        overlayProps={{ blur: 2, backgroundOpacity: 0.6 }}
+        styles={{
+          content: {
+            padding: 0,
+            backgroundColor: "transparent",
+            borderRadius: "1.5rem",
+          },
+        }}
       >
-        Save Changes
-      </Button>
-    </div>
-  </div>
-</Modal>
+        <div className="w-[420px] bg-mine-shaft-900 text-white rounded-l-[30px] rounded-r-[40px] overflow-hidden shadow-2xl border border-bright-sun-400">
+          <div className="px-6 py-4 border-b border-slate-700 bg-mine-shaft-800 rounded-tl-3xl">
+            <h2 className="text-lg font-bold text-yellow-400">Edit Profile</h2>
+          </div>
 
+          {/* Tab Navigation */}
+          <Tabs defaultValue="basic" className="px-6 py-5">
+            <Tabs.List grow className="mb-4">
+              <Tabs.Tab value="basic" className="text-yellow-400">Basic Info</Tabs.Tab>
+              <Tabs.Tab value="about" className="text-yellow-400">About</Tabs.Tab>
+              <Tabs.Tab value="skills" className="text-yellow-400">Skills</Tabs.Tab>
+            </Tabs.List>
+
+            <Tabs.Panel value="basic" className="space-y-4">
+              <TextInput
+                label="Full Name"
+                variant="filled"
+                radius="md"
+                value={profileData.name}
+                onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                classNames={{
+                  input: "bg-mine-shaft-800 text-white border border-slate-700",
+                  label: "text-yellow-400 font-semibold",
+                }}
+              />
+              <TextInput
+                label="Job Title"
+                variant="filled"
+                radius="md"
+                value={profileData.title}
+                onChange={(e) => setProfileData({ ...profileData, title: e.target.value })}
+                classNames={{
+                  input: "bg-mine-shaft-800 text-white border border-slate-700",
+                  label: "text-yellow-400 font-semibold",
+                }}
+              />
+              <TextInput
+                label="Location"
+                variant="filled"
+                radius="md"
+                value={profileData.location}
+                onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                classNames={{
+                  input: "bg-mine-shaft-800 text-white border border-slate-700",
+                  label: "text-yellow-400 font-semibold",
+                }}
+              />
+              <TextInput
+                label="Experience"
+                variant="filled"
+                radius="md"
+                value={profileData.experience}
+                onChange={(e) => setProfileData({ ...profileData, experience: e.target.value })}
+                classNames={{
+                  input: "bg-mine-shaft-800 text-white border border-slate-700",
+                  label: "text-yellow-400 font-semibold",
+                }}
+              />
+            </Tabs.Panel>
+
+            <Tabs.Panel value="about" className="space-y-4">
+              <Textarea
+                label="About"
+                variant="filled"
+                radius="md"
+                minRows={4}
+                autosize
+                value={about}
+                onChange={(e) => setAbout(e.target.value)}
+                classNames={{
+                  input: "bg-mine-shaft-800 text-white border border-slate-700",
+                  label: "text-yellow-400 font-semibold",
+                }}
+              />
+            </Tabs.Panel>
+
+            <Tabs.Panel value="skills" className="space-y-4">
+              <TextInput
+                label="Add Skill"
+                variant="filled"
+                radius="md"
+                value={newSkill}
+                onChange={(e) => setNewSkill(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newSkill.trim()) {
+                    e.preventDefault();
+                    if (!skills.includes(newSkill.trim())) {
+                      setSkills([...skills, newSkill.trim()]);
+                      setNewSkill("");
+                    }
+                  }
+                }}
+                classNames={{
+                  input: "bg-mine-shaft-800 text-white border border-slate-700",
+                  label: "text-yellow-400 font-semibold",
+                }}
+              />
+              <div className="flex flex-wrap gap-2">
+                {skills.map((skill, i) => (
+                  <span
+                    key={i}
+                    className="flex items-center bg-mine-shaft-800 text-gray-200 px-3 py-1 rounded-full text-sm border border-slate-700 hover:border-yellow-400 transition-all"
+                  >
+                    {skill}
+                    <button
+                      onClick={() => setSkills(skills.filter((_, idx) => idx !== i))}
+                      className="ml-2 text-red-400 hover:text-red-300"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </Tabs.Panel>
+          </Tabs>
+
+          <div className="px-6 pb-5">
+            <Button
+              onClick={handleSaveProfile}
+              fullWidth
+              radius="md"
+              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold transition-all hover:scale-105 active:scale-95"
+            >
+              Save Changes
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <div className="w-full max-w-4xl mx-auto mt-8 mb-16 bg-mine-shaft-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50">
         {/* Banner */}

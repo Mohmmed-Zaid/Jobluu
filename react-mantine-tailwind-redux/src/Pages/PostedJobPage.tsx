@@ -29,6 +29,8 @@ interface TalentProps {
   onLike: (talentId: number) => void;
 }
 
+
+
 const TalentCard: React.FC<TalentProps> = ({ talent, onLike }) => {
   const navigate = useNavigate();
 
