@@ -47,7 +47,7 @@ public class UserServiceImpl implements UserService {
             throw new JobluuException("USER_FOUND");
         }
 
-        userDto.setProfileId(profileService.createProfile(userDto.getEmail()));
+        userDto.setProfileId(profileService.createProfile(userDto.getEmail()).toString());
         userDto.setId(Utilities.getNextSequence("users"));
         userDto.setPassword(passwordEncoder.encode(userDto.getPassword()));
 

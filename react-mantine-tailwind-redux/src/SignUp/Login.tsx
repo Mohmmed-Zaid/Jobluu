@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch } from "../Store/hooks";
+import { setUser } from "../Store/userSlice";
 import { loginUser } from "../Services/UserService";
 import ResetPassword from './ResetPassword';
 
@@ -10,6 +13,27 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword }) => {
+  // Check for corrupted Redux persist state on component mount
+  React.useEffect(() => {
+    try {
+      const persistedState = localStorage.getItem('persist:root');
+      if (persistedState) {
+        const parsed = JSON.parse(persistedState);
+        // Check if user state is corrupted (encrypted string instead of object)
+        if (parsed.user && typeof parsed.user === 'string' && parsed.user.startsWith('U2FsdGVkX1')) {
+          console.log('🔧 Detected corrupted Redux persist state, clearing...');
+          localStorage.clear();
+          window.location.reload();
+          return;
+        }
+      }
+    } catch (e) {
+      console.log('🔧 Error checking persist state, clearing localStorage...');
+      localStorage.clear();
+      window.location.reload();
+    }
+  }, []);
+
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -19,6 +43,10 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
   const [messageType, setMessageType] = useState<"error" | "success" | "info" | "">("");
   const [isLoading, setIsLoading] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
+
+  // Redux hooks
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   const togglePassword = () => setShowPassword((prev) => !prev);
 
@@ -52,6 +80,8 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
     showMessage("Logging in...", "info");
 
     try {
+      console.log('🔄 Starting login process...');
+      
       const loginData = {
         email: formData.email,
         password: formData.password,
@@ -60,14 +90,61 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
       console.log("Login Attempt:", loginData);
 
       const result = await loginUser(loginData);
-      showMessage("Login successful!", "success");
+      console.log('✅ Login API response:', result);
 
+      // Extract token and user data from the API response
+      // Check for different possible token field names
+      const token = result.token || result.accessToken || result.authToken || result.jwt;
+      const user = result.user || result.userData || result;
+
+      // If no token is provided by the API, we'll create a simple session
+      // You should ask your backend team to include a proper JWT token
+      if (!token) {
+        console.log('⚠️ No token in API response, creating session without token');
+        console.log('API Response structure:', Object.keys(result));
+        
+        // For now, we'll use the user ID as a basic identifier
+        // This is NOT secure for production - you need a proper JWT token
+        const sessionId = `user_${result.id}_${Date.now()}`;
+        localStorage.setItem('authToken', sessionId);
+        localStorage.setItem('userId', result.id?.toString() || '');
+        
+        console.log('Created session with ID:', sessionId);
+      } else {
+        // Store the actual token
+        localStorage.setItem('authToken', token);
+      }
+
+      console.log('🔄 Setting Redux state...');
+      console.log('Token/Session:', token || `session for user ${result.id}`);
+      console.log('User:', user);
+
+      // Store token in localStorage for persistence (already done above)
+      
+      // Set user profile in Redux
+      dispatch(setUser(user));
+
+      console.log('✅ Login state updated successfully');
+      showMessage("Login successful! Redirecting...", "success");
+
+      // Use React Router navigation
       setTimeout(() => {
-        window.location.href = "http://localhost:5173/";
-      }, 1500);
+        console.log('🔄 Navigating to find-jobs...');
+        navigate('/find-jobs');
+      }, 1000);
 
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('❌ Login error:', error);
+      console.log('Login failed, handling error state...');
+      
+      // Check if this is a Redux persist error and clear localStorage if needed
+      if (error.message && error.message.includes('Cannot create property')) {
+        console.log('🔧 Detected Redux persist error, clearing localStorage...');
+        localStorage.clear();
+        window.location.reload();
+        return;
+      }
+      
       const errorMessage = error?.errorMessage || error?.message || "Login failed. Please try again.";
       showMessage(errorMessage, "error");
     } finally {
@@ -91,7 +168,7 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
       >
         <div>
           <h2 className="text-3xl font-bold text-white mb-1">Welcome Back!</h2>
-          <p className="text-sm text-gray-400">Sign in to your JobHook account.</p>
+          <p className="text-sm text-gray-400">Sign in to your Jobluu account.</p>
         </div>
 
         {/* Message Notification */}
