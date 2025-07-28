@@ -4,33 +4,54 @@ import {
   Avatar,
   Switch,
   rem,
+  Divider,
 } from "@mantine/core";
 import {
-  IconSearch,
-  IconMessageCircle,
-  IconTrash,
-  IconArrowsLeftRight,
   IconUserCircle,
+  IconMessageCircle,
   IconFileText,
   IconMoon,
   IconSun,
+  IconArrowsLeftRight,
+  IconTrash,
+  IconLogout2,
 } from "@tabler/icons-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const ProfileMenu = () => {
   const [darkMode, setDarkMode] = useState(false);
+  const navigate = useNavigate();
+
+  // 🔁 Toggle site-wide dark mode logic (example)
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => !prev);
+    document.documentElement.classList.toggle("dark");
+  };
+
+  // 🔒 Log out functionality (you can update as per your auth logic)
+  const handleLogout = () => {
+    localStorage.clear(); // or remove token
+    navigate("/login");
+  };
+
+  const handleDeleteAccount = () => {
+    if (window.confirm("Are you sure you want to delete your account? This action is irreversible.")) {
+      // Call delete API
+      console.log("Deleting account...");
+    }
+  };
 
   return (
-    <Menu shadow="md" width={220} closeOnItemClick>
+    <Menu shadow="md" width={220} position="bottom-end">
       <Menu.Target>
         <div className="flex cursor-pointer items-center gap-2">
-          <div className="text-white font-medium">Mohmmed Zaid</div>
+          <div className="text-white font-medium">Mohammed Zaid</div>
           <Avatar src="/avatar.png" alt="You" />
         </div>
       </Menu.Target>
 
       <Menu.Dropdown>
-        {/* Navigate to profile page with <Link> */}
+        {/* 👤 Profile link */}
         <Menu.Item
           leftSection={<IconUserCircle size={16} />}
           component={Link}
@@ -39,20 +60,33 @@ const ProfileMenu = () => {
           Profile
         </Menu.Item>
 
-        <Menu.Item leftSection={<IconMessageCircle size={16} />}>
+        {/* 💬 Messages */}
+        <Menu.Item
+          leftSection={<IconMessageCircle size={16} />}
+          component={Link}
+          to="/messages"
+        >
           Messages
         </Menu.Item>
-        <Menu.Item leftSection={<IconFileText size={16} />}>
+
+        {/* 📄 Resume */}
+        <Menu.Item
+          leftSection={<IconFileText size={16} />}
+          component={Link}
+          to="/resume"
+        >
           Resume
         </Menu.Item>
 
-        {/* Dark Mode Toggle */}
+        <Divider my="xs" />
+
+        {/* 🌙 Dark Mode Toggle */}
         <Menu.Item
           leftSection={<IconMoon size={16} />}
           rightSection={
             <Switch
               checked={darkMode}
-              onChange={() => setDarkMode((prev) => !prev)}
+              onChange={toggleDarkMode}
               size="md"
               color="yellow"
               onLabel={
@@ -73,14 +107,29 @@ const ProfileMenu = () => {
           Dark Mode
         </Menu.Item>
 
-        <Menu.Divider />
+        <Divider my="xs" />
+        <Menu.Label>Account</Menu.Label>
 
-        <Menu.Label>Danger zone</Menu.Label>
+        {/* 🔁 Transfer Data */}
         <Menu.Item leftSection={<IconArrowsLeftRight size={16} />}>
           Transfer my data
         </Menu.Item>
-        <Menu.Item color="red" leftSection={<IconTrash size={16} />}>
+
+        {/* 🗑️ Delete Account */}
+        <Menu.Item
+          color="red"
+          leftSection={<IconTrash size={16} />}
+          onClick={handleDeleteAccount}
+        >
           Delete my account
+        </Menu.Item>
+
+        {/* 🚪 Logout */}
+        <Menu.Item
+          leftSection={<IconLogout2 size={16} />}
+          onClick={handleLogout}
+        >
+          Logout
         </Menu.Item>
       </Menu.Dropdown>
     </Menu>

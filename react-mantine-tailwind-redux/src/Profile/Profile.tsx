@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   IconMapPin,
   IconStar,
@@ -15,6 +16,8 @@ import {
   Textarea,
   Button,
   Tabs,
+  Loader,
+  Notification,
 } from "@mantine/core";
 import ExpCard from "./ExpCard";
 import RecommendTalent from "./RecommendTalent";
@@ -22,98 +25,252 @@ import CertificateCard from "./CertificateCard";
 import Header from "../Header/Header";
 import Footer from "../footer/Footer";
 
-const Profile = () => {
+// Redux imports
+import {
+  fetchProfile,
+  saveProfile,
+  autoSaveProfile,
+  uploadAvatar,
+  setEditModalOpen,
+  clearError,
+  updateProfileData,
+  updateAbout,
+  updateSkills,
+  addSkill,
+  removeSkill,
+  updateAvatar,
+  initializeProfile,
+  selectProfile,
+  selectProfileData,
+  selectAbout,
+  selectSkills,
+  selectAvatar,
+  selectStats,
+  selectExperiences,
+  selectCertifications,
+  selectProfileLoading,
+  selectProfileSaving,
+  selectProfileError,
+  selectIsEditModalOpen,
+  selectAutoSaveEnabled,
+} from "../Slice/ProfileSlice";
+
+// Types
+interface User {
+  id: number;
+  name?: string;
+  email?: string;
+}
+
+interface RootState {
+  auth?: {
+    user?: User;
+    isAuthenticated?: boolean;
+  };
+  user?: User;
+  profile: any;
+}
+
+const Profile: React.FC = () => {
+  const dispatch = useDispatch();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [avatar, setAvatar] = useState("/avatar.png");
-  const [editOpen, setEditOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  const [profileData, setProfileData] = useState({
-    name: "Jarrod Wood",
-    title: "Software Engineer",
-    location: "Pune, India",
-    experience: "5+ Years Experience",
-  });
-
-  const [about, setAbout] = useState(
-    "Experienced software engineer passionate about building scalable web applications and clean user experiences. Specialized in React, Node.js, and system design."
-  );
-
-  const [skills, setSkills] = useState([
-    "React",
-    "Node.js",
-    "TypeScript",
-    "Python",
-    "AWS",
-    "MongoDB",
-  ]);
+  
+  // Redux selectors
+  const profileData = useSelector(selectProfileData);
+  const about = useSelector(selectAbout);
+  const skills = useSelector(selectSkills);
+  const avatar = useSelector(selectAvatar);
+  const stats = useSelector(selectStats);
+  const experiences = useSelector(selectExperiences);
+  const certifications = useSelector(selectCertifications);
+  const loading = useSelector(selectProfileLoading);
+  const saving = useSelector(selectProfileSaving);
+  const error = useSelector(selectProfileError);
+  const editOpen = useSelector(selectIsEditModalOpen);
+  const autoSaveEnabled = useSelector(selectAutoSaveEnabled);
+  
+  // Local state for form inputs
   const [newSkill, setNewSkill] = useState("");
+  const [profileInitialized, setProfileInitialized] = useState(false);
+  
+  // Get user from auth state - Fixed authentication check
+  const authState = useSelector((state: RootState) => state.auth);
+  const userState = useSelector((state: RootState) => state.user);
+  
+  // Try to get user from either auth or user state
+  const user = authState?.user || userState;
+  const isAuthenticated = authState?.isAuthenticated || !!user;
 
-  // Fixed useEffect with proper dependency array and error handling
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        setLoading(true);
-        // Make sure 'user' and 'getProfile' are properly imported/defined
-        const data = await getProfile(user.id);
-        console.log('Profile data:', data);
-        
-        // Update state with fetched data
-        if (data) {
-          setProfileData({
-            name: data.name || profileData.name,
-            title: data.title || profileData.title,
-            location: data.location || profileData.location,
-            experience: data.experience || profileData.experience,
-          });
-          
-          if (data.about) setAbout(data.about);
-          if (data.skills) setSkills(data.skills);
-          if (data.avatar) setAvatar(data.avatar);
-        }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-        // You might want to show a toast notification or error message to user
-      } finally {
-        setLoading(false);
-      }
-    };
+  const userId = user?.id;
 
-    fetchProfile();
-  }, []); // Empty dependency array means this runs once on mount
+  // Auto-save debounce - Fixed implementation
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  // Function to save profile changes
-  const handleSaveProfile = async () => {
-    try {
+  const triggerAutoSave = useCallback(() => {
+    if (!autoSaveEnabled || !userId || !profileInitialized) return;
+
+    // Clear existing timeout
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+
+    // Set new timeout for auto-save
+    const timeout = setTimeout(() => {
       const profilePayload = {
-        ...profileData,
+        id: profileData.id || userId.toString(),
+        name: profileData.name || user?.name || "Your Name",
+        title: profileData.title,
+        company: profileData.company,
+        location: profileData.location,
+        experience: profileData.experience,
+        email: profileData.email || user?.email || "",
+        phone: profileData.phone,
         about,
         skills,
         avatar,
+        experiences,
+        certifications,
+        stats,
       };
       
-      const response = await saveProfile(user.id, profilePayload);
-      console.log('Profile saved:', response);
-      setEditOpen(false);
-      // You might want to show a success message
+      dispatch(autoSaveProfile({ 
+        userId: userId.toString(), 
+        delay: 0 
+      }));
+    }, 1500); // Reduced debounce time to 1.5 seconds
+
+    setAutoSaveTimeout(timeout);
+  }, [autoSaveEnabled, userId, profileInitialized, autoSaveTimeout, dispatch, profileData, about, skills, avatar, experiences, certifications, stats, user]);
+
+  // Initialize profile when user is available - Fixed initialization
+  useEffect(() => {
+    if (user && userId && !profileInitialized) {
+      console.log('Initializing profile for user:', userId);
+      
+      // Initialize profile with user data
+      dispatch(initializeProfile({
+        userId: userId.toString(),
+        name: user.name,
+        email: user.email
+      }));
+
+      // Fetch existing profile data
+      dispatch(fetchProfile(userId.toString()));
+      setProfileInitialized(true);
+    }
+  }, [dispatch, user, userId, profileInitialized]);
+
+  // Auto-save when data changes - Fixed dependency array
+  useEffect(() => {
+    if (profileInitialized && autoSaveEnabled && userId) {
+      triggerAutoSave();
+    }
+  }, [profileData, about, skills, experiences, certifications, profileInitialized, autoSaveEnabled, userId, triggerAutoSave]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+      }
+    };
+  }, [autoSaveTimeout]);
+
+  // Show login message if not authenticated - Removed unnecessary loader
+  if (!isAuthenticated || !user) {
+    return (
+      <>
+        <Header />
+        <div className="w-full max-w-4xl mx-auto mt-8 mb-16 bg-mine-shaft-900 rounded-2xl p-8 text-center">
+          <div className="text-white text-lg">Please log in to view your profile</div>
+          <div className="text-gray-400 text-sm mt-2">You need to be authenticated to access this page</div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  const handleSaveProfile = async () => {
+    if (!userId || !user) return;
+    
+    const profilePayload = {
+      id: profileData.id || userId.toString(),
+      name: profileData.name || user.name || "Your Name",
+      title: profileData.title,
+      company: profileData.company,
+      location: profileData.location,
+      experience: profileData.experience,
+      email: profileData.email || user.email || "",
+      phone: profileData.phone,
+      about,
+      skills,
+      avatar,
+      experiences,
+      certifications,
+      stats,
+    };
+    
+    try {
+      await dispatch(saveProfile({ 
+        userId: userId.toString(), 
+        profileData: profilePayload 
+      })).unwrap();
+      dispatch(setEditModalOpen(false));
     } catch (error) {
-      console.error('Error saving profile:', error);
-      // You might want to show an error message
+      console.error('Save failed:', error);
     }
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) setAvatar(URL.createObjectURL(file));
+    if (file && userId && user) {
+      // For immediate UI update
+      const objectUrl = URL.createObjectURL(file);
+      dispatch(updateAvatar(objectUrl));
+      
+      // Upload to server
+      dispatch(uploadAvatar({ userId: userId.toString(), file }));
+    }
   };
 
-  // Show loading state while fetching data
-  if (loading) {
+  const handleAddSkill = () => {
+    if (newSkill.trim()) {
+      dispatch(addSkill(newSkill.trim()));
+      setNewSkill("");
+    }
+  };
+
+  const handleSkillKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddSkill();
+    }
+  };
+
+  const handleRemoveSkill = (index: number) => {
+    dispatch(removeSkill(index));
+  };
+
+  const handleProfileDataChange = (field: keyof typeof profileData, value: string) => {
+    dispatch(updateProfileData({ [field]: value }));
+  };
+
+  const handleAboutChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    dispatch(updateAbout(e.target.value));
+  };
+
+  const handleCloseError = () => {
+    dispatch(clearError());
+  };
+
+  // Show loading state only for initial load - Simplified loading
+  if (loading && !profileInitialized) {
     return (
       <>
         <Header />
         <div className="w-full max-w-4xl mx-auto mt-8 mb-16 bg-mine-shaft-900 rounded-2xl p-8 text-center">
-          <div className="text-white">Loading profile...</div>
+          <Loader size="lg" color="yellow" />
+          <div className="text-white mt-4">Loading your profile...</div>
         </div>
         <Footer />
       </>
@@ -123,9 +280,42 @@ const Profile = () => {
   return (
     <>
       <Header />
+      
+      {/* Error Notification */}
+      {error && (
+        <div className="fixed top-4 right-4 z-50">
+          <Notification
+            color="red"
+            title="Error"
+            onClose={handleCloseError}
+          >
+            {error}
+          </Notification>
+        </div>
+      )}
+
+      {/* Auto-save indicator - Enhanced visual feedback */}
+      {autoSaveEnabled && saving && (
+        <div className="fixed top-4 left-4 z-50">
+          <div className="bg-mine-shaft-800 text-yellow-400 px-4 py-2 rounded-lg text-sm flex items-center border border-yellow-400/20">
+            <Loader size="xs" color="yellow" className="mr-2" />
+            Saving changes...
+          </div>
+        </div>
+      )}
+
+      {/* Success indicator */}
+      {!saving && profileInitialized && (
+        <div className="fixed top-4 left-4 z-40">
+          <div className="bg-green-800/80 text-green-300 px-4 py-2 rounded-lg text-sm flex items-center border border-green-400/20 opacity-80">
+            ✓ All changes saved
+          </div>
+        </div>
+      )}
+
       <Modal
         opened={editOpen}
-        onClose={() => setEditOpen(false)}
+        onClose={() => dispatch(setEditModalOpen(false))}
         withCloseButton={false}
         centered
         radius="xl"
@@ -142,9 +332,11 @@ const Profile = () => {
         <div className="w-[420px] bg-mine-shaft-900 text-white rounded-l-[30px] rounded-r-[40px] overflow-hidden shadow-2xl border border-bright-sun-400">
           <div className="px-6 py-4 border-b border-slate-700 bg-mine-shaft-800 rounded-tl-3xl">
             <h2 className="text-lg font-bold text-yellow-400">Edit Profile</h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Changes will be saved automatically
+            </p>
           </div>
 
-          {/* Tab Navigation */}
           <Tabs defaultValue="basic" className="px-6 py-5">
             <Tabs.List grow className="mb-4">
               <Tabs.Tab value="basic" className="text-yellow-400">Basic Info</Tabs.Tab>
@@ -157,8 +349,8 @@ const Profile = () => {
                 label="Full Name"
                 variant="filled"
                 radius="md"
-                value={profileData.name}
-                onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                value={profileData.name || ''}
+                onChange={(e) => handleProfileDataChange('name', e.target.value)}
                 classNames={{
                   input: "bg-mine-shaft-800 text-white border border-slate-700",
                   label: "text-yellow-400 font-semibold",
@@ -168,8 +360,19 @@ const Profile = () => {
                 label="Job Title"
                 variant="filled"
                 radius="md"
-                value={profileData.title}
-                onChange={(e) => setProfileData({ ...profileData, title: e.target.value })}
+                value={profileData.title || ''}
+                onChange={(e) => handleProfileDataChange('title', e.target.value)}
+                classNames={{
+                  input: "bg-mine-shaft-800 text-white border border-slate-700",
+                  label: "text-yellow-400 font-semibold",
+                }}
+              />
+              <TextInput
+                label="Company"
+                variant="filled"
+                radius="md"
+                value={profileData.company || ''}
+                onChange={(e) => handleProfileDataChange('company', e.target.value)}
                 classNames={{
                   input: "bg-mine-shaft-800 text-white border border-slate-700",
                   label: "text-yellow-400 font-semibold",
@@ -179,8 +382,8 @@ const Profile = () => {
                 label="Location"
                 variant="filled"
                 radius="md"
-                value={profileData.location}
-                onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                value={profileData.location || ''}
+                onChange={(e) => handleProfileDataChange('location', e.target.value)}
                 classNames={{
                   input: "bg-mine-shaft-800 text-white border border-slate-700",
                   label: "text-yellow-400 font-semibold",
@@ -190,8 +393,30 @@ const Profile = () => {
                 label="Experience"
                 variant="filled"
                 radius="md"
-                value={profileData.experience}
-                onChange={(e) => setProfileData({ ...profileData, experience: e.target.value })}
+                value={profileData.experience || ''}
+                onChange={(e) => handleProfileDataChange('experience', e.target.value)}
+                classNames={{
+                  input: "bg-mine-shaft-800 text-white border border-slate-700",
+                  label: "text-yellow-400 font-semibold",
+                }}
+              />
+              <TextInput
+                label="Email"
+                variant="filled"
+                radius="md"
+                value={profileData.email || ''}
+                onChange={(e) => handleProfileDataChange('email', e.target.value)}
+                classNames={{
+                  input: "bg-mine-shaft-800 text-white border border-slate-700",
+                  label: "text-yellow-400 font-semibold",
+                }}
+              />
+              <TextInput
+                label="Phone"
+                variant="filled"
+                radius="md"
+                value={profileData.phone || ''}
+                onChange={(e) => handleProfileDataChange('phone', e.target.value)}
                 classNames={{
                   input: "bg-mine-shaft-800 text-white border border-slate-700",
                   label: "text-yellow-400 font-semibold",
@@ -207,7 +432,7 @@ const Profile = () => {
                 minRows={4}
                 autosize
                 value={about}
-                onChange={(e) => setAbout(e.target.value)}
+                onChange={handleAboutChange}
                 classNames={{
                   input: "bg-mine-shaft-800 text-white border border-slate-700",
                   label: "text-yellow-400 font-semibold",
@@ -222,15 +447,18 @@ const Profile = () => {
                 radius="md"
                 value={newSkill}
                 onChange={(e) => setNewSkill(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && newSkill.trim()) {
-                    e.preventDefault();
-                    if (!skills.includes(newSkill.trim())) {
-                      setSkills([...skills, newSkill.trim()]);
-                      setNewSkill("");
-                    }
-                  }
-                }}
+                onKeyDown={handleSkillKeyDown}
+                rightSection={
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    color="yellow"
+                    onClick={handleAddSkill}
+                    disabled={!newSkill.trim()}
+                  >
+                    Add
+                  </Button>
+                }
                 classNames={{
                   input: "bg-mine-shaft-800 text-white border border-slate-700",
                   label: "text-yellow-400 font-semibold",
@@ -244,7 +472,7 @@ const Profile = () => {
                   >
                     {skill}
                     <button
-                      onClick={() => setSkills(skills.filter((_, idx) => idx !== i))}
+                      onClick={() => handleRemoveSkill(i)}
                       className="ml-2 text-red-400 hover:text-red-300"
                     >
                       ×
@@ -260,9 +488,10 @@ const Profile = () => {
               onClick={handleSaveProfile}
               fullWidth
               radius="md"
+              loading={saving}
               className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold transition-all hover:scale-105 active:scale-95"
             >
-              Save Changes
+              {saving ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </div>
@@ -273,10 +502,10 @@ const Profile = () => {
         <div className="relative">
           <img className="w-full h-48 object-cover" src="/banner.png" alt="Banner" />
           <div className="absolute top-4 right-4 flex gap-2">
-            <button className="bg-mine-shaft-800 p-2 rounded-full">
+            <button className="bg-mine-shaft-800 p-2 rounded-full hover:bg-mine-shaft-700 transition">
               <IconShare size={18} className="text-yellow-400" />
             </button>
-            <button className="bg-mine-shaft-800 p-2 rounded-full">
+            <button className="bg-mine-shaft-800 p-2 rounded-full hover:bg-mine-shaft-700 transition">
               <IconBookmark size={18} className="text-yellow-400" />
             </button>
           </div>
@@ -298,7 +527,7 @@ const Profile = () => {
               />
               <ActionIcon
                 variant="filled"
-                className="absolute bottom-2 right-2 bg-yellow-400 hover:bg-yellow-500"
+                className="absolute bottom-2 right-2 bg-yellow-400 hover:bg-yellow-500 transition"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <IconPencil size={16} />
@@ -306,7 +535,7 @@ const Profile = () => {
               <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
                 <div className="flex items-center bg-yellow-400 text-black px-3 py-1 rounded-full text-xs font-bold shadow-lg">
                   <IconStar size={12} className="mr-1" />
-                  4.9
+                  {stats.rating || 4.9}
                 </div>
               </div>
             </div>
@@ -318,13 +547,15 @@ const Profile = () => {
           <div className="flex items-start justify-between mb-6">
             <div>
               <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                {profileData.name}
+                {profileData.name || user.name || "Your Name"}
               </h2>
-              <p className="text-lg text-yellow-400 font-semibold mt-1">{profileData.title}</p>
+              <p className="text-lg text-yellow-400 font-semibold mt-1">
+                {profileData.title || "Your Title"}
+              </p>
               <div className="flex items-center gap-4 mt-3 text-sm text-gray-400">
                 <div className="flex items-center">
                   <IconBriefcase size={16} className="mr-1.5 text-yellow-400" />
-                  {profileData.experience}
+                  {profileData.company || profileData.experience || "Company"}
                 </div>
                 <div className="flex items-center">
                   <IconCalendar size={16} className="mr-1.5 text-yellow-400" />
@@ -338,7 +569,7 @@ const Profile = () => {
               radius="xl"
               size="lg"
               className="bg-mine-shaft-800 hover:bg-mine-shaft-700 p-2 transition hover:scale-110"
-              onClick={() => setEditOpen(true)}
+              onClick={() => dispatch(setEditModalOpen(true))}
             >
               <IconPencil size={20} />
             </ActionIcon>
@@ -347,7 +578,7 @@ const Profile = () => {
           {/* Location */}
           <div className="flex items-center text-gray-300 mb-6 bg-mine-shaft-800/50 px-4 py-3 rounded-xl border border-slate-700/50">
             <IconMapPin className="h-5 w-5 mr-2 text-yellow-400" />
-            <span className="font-medium">{profileData.location}</span>
+            <span className="font-medium">{profileData.location || "Location"}</span>
             <span className="ml-auto text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
               Open to Remote
             </span>
@@ -356,9 +587,9 @@ const Profile = () => {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             {[
-              { label: "Projects", value: "127" },
-              { label: "Followers", value: "2.3k" },
-              { label: "Success Rate", value: "98%" },
+              { label: "Projects", value: stats.projects || 0 },
+              { label: "Followers", value: stats.followers || 0 },
+              { label: "Success Rate", value: `${stats.successRate || 0}%` },
             ].map(({ label, value }, i) => (
               <div
                 key={i}
@@ -374,7 +605,7 @@ const Profile = () => {
           <div className="mb-6">
             <h3 className="text-white font-semibold mb-3 text-lg">About</h3>
             <div className="text-gray-300 text-sm leading-relaxed bg-mine-shaft-800/30 p-4 rounded-xl border border-slate-700/30">
-              {about}
+              {about || "Tell us about yourself..."}
             </div>
           </div>
 
@@ -382,18 +613,22 @@ const Profile = () => {
           <div className="mb-8">
             <h3 className="text-white font-semibold mb-3 text-lg">Core Skills</h3>
             <div className="flex flex-wrap gap-2">
-              {skills.map((skill, index) => (
-                <span
-                  key={index}
-                  className="bg-mine-shaft-800 hover:bg-mine-shaft-700 text-gray-300 hover:text-white px-3 py-2 rounded-full text-sm border border-slate-700/50 hover:border-yellow-400/50 transition cursor-pointer"
-                >
-                  {skill}
-                </span>
-              ))}
+              {skills.length > 0 ? (
+                skills.map((skill, index) => (
+                  <span
+                    key={index}
+                    className="bg-mine-shaft-800 hover:bg-mine-shaft-700 text-gray-300 hover:text-white px-3 py-2 rounded-full text-sm border border-slate-700/50 hover:border-yellow-400/50 transition cursor-pointer"
+                  >
+                    {skill}
+                  </span>
+                ))
+              ) : (
+                <p className="text-gray-400 text-sm">No skills added yet. Click edit to add your skills.</p>
+              )}
             </div>
           </div>
 
-          {/* Buttons */}
+          {/* Action Buttons */}
           <div className="flex gap-4 mb-8">
             <button className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold text-sm px-6 py-3 rounded-xl transition hover:scale-105 active:scale-95">
               Connect Now
@@ -401,22 +636,28 @@ const Profile = () => {
             <button className="flex-1 border-2 border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black font-bold text-sm px-6 py-3 rounded-xl transition hover:scale-105 active:scale-95">
               Send Message
             </button>
-            <button className="bg-mine-shaft-800 hover:bg-mine-shaft-700 text-gray-300 hover:text-white px-4 py-3 rounded-xl border border-slate-700/50 hover:border-yellow-400/50">
+            <button className="bg-mine-shaft-800 hover:bg-mine-shaft-700 text-gray-300 hover:text-white px-4 py-3 rounded-xl border border-slate-700/50 hover:border-yellow-400/50 transition">
               <IconBookmark size={18} />
             </button>
           </div>
 
           {/* Experience */}
-          <h3 className="text-white font-semibold text-lg mb-4">Experience</h3>
-          <ExpCard />
+          <div className="mb-8">
+            <h3 className="text-white font-semibold text-lg mb-4">Experience</h3>
+            <ExpCard experiences={experiences} />
+          </div>
 
           {/* Certifications */}
-          <h3 className="text-white font-semibold text-lg mb-4 mt-8">Certifications</h3>
-          <CertificateCard />
+          <div className="mb-8">
+            <h3 className="text-white font-semibold text-lg mb-4">Certifications</h3>
+            <CertificateCard certifications={certifications} />
+          </div>
 
           {/* Recommended Talent */}
-          <h3 className="text-white font-semibold text-lg mb-4 mt-8">Recommended Talent</h3>
-          <RecommendTalent />
+          <div>
+            <h3 className="text-white font-semibold text-lg mb-4">Recommended Talent</h3>
+            <RecommendTalent />
+          </div>
         </div>
       </div>
 
