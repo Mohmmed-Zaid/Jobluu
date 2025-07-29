@@ -30,7 +30,6 @@ interface TalentProps {
 }
 
 
-
 const TalentCard: React.FC<TalentProps> = ({ talent, onLike }) => {
   const navigate = useNavigate();
 

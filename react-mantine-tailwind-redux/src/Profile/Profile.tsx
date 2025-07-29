@@ -92,6 +92,7 @@ const Profile: React.FC = () => {
   // Local state for form inputs
   const [newSkill, setNewSkill] = useState("");
   const [profileInitialized, setProfileInitialized] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   
   // Get user from auth state - Fixed authentication check
   const authState = useSelector((state: RootState) => state.auth);
@@ -176,6 +177,16 @@ const Profile: React.FC = () => {
     };
   }, [autoSaveTimeout]);
 
+  // Show success message after save
+  useEffect(() => {
+    if (saveSuccess) {
+      const timer = setTimeout(() => {
+        setSaveSuccess(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [saveSuccess]);
+
   // Show login message if not authenticated - Removed unnecessary loader
   if (!isAuthenticated || !user) {
     return (
@@ -190,34 +201,47 @@ const Profile: React.FC = () => {
     );
   }
 
+  // Enhanced save function with proper error handling
   const handleSaveProfile = async () => {
     if (!userId || !user) return;
     
     const profilePayload = {
       id: profileData.id || userId.toString(),
       name: profileData.name || user.name || "Your Name",
-      title: profileData.title,
-      company: profileData.company,
-      location: profileData.location,
-      experience: profileData.experience,
+      title: profileData.title || "",
+      company: profileData.company || "",
+      location: profileData.location || "",
+      experience: profileData.experience || "",
       email: profileData.email || user.email || "",
-      phone: profileData.phone,
-      about,
-      skills,
-      avatar,
-      experiences,
-      certifications,
-      stats,
+      phone: profileData.phone || "",
+      about: about || "",
+      skills: skills || [],
+      avatar: avatar || "/avatar.png",
+      experiences: experiences || [],
+      certifications: certifications || [],
+      stats: stats || { projects: 0, followers: 0, successRate: 0, rating: 4.9 },
     };
     
     try {
-      await dispatch(saveProfile({ 
+      console.log('Saving profile:', profilePayload);
+      
+      // Dispatch save action
+      const result = await dispatch(saveProfile({ 
         userId: userId.toString(), 
         profileData: profilePayload 
       })).unwrap();
+      
+      console.log('Profile saved successfully:', result);
+      
+      // Show success message
+      setSaveSuccess(true);
+      
+      // Close modal
       dispatch(setEditModalOpen(false));
+      
     } catch (error) {
       console.error('Save failed:', error);
+      // Error will be shown via the error notification
     }
   };
 
@@ -294,6 +318,19 @@ const Profile: React.FC = () => {
         </div>
       )}
 
+      {/* Success Notification */}
+      {saveSuccess && (
+        <div className="fixed top-4 right-4 z-50">
+          <Notification
+            color="green"
+            title="Success"
+            onClose={() => setSaveSuccess(false)}
+          >
+            Profile saved successfully!
+          </Notification>
+        </div>
+      )}
+
       {/* Auto-save indicator - Enhanced visual feedback */}
       {autoSaveEnabled && saving && (
         <div className="fixed top-4 left-4 z-50">
@@ -304,8 +341,8 @@ const Profile: React.FC = () => {
         </div>
       )}
 
-      {/* Success indicator */}
-      {!saving && profileInitialized && (
+      {/* All changes saved indicator */}
+      {!saving && profileInitialized && !saveSuccess && (
         <div className="fixed top-4 left-4 z-40">
           <div className="bg-green-800/80 text-green-300 px-4 py-2 rounded-lg text-sm flex items-center border border-green-400/20 opacity-80">
             ✓ All changes saved
@@ -333,7 +370,7 @@ const Profile: React.FC = () => {
           <div className="px-6 py-4 border-b border-slate-700 bg-mine-shaft-800 rounded-tl-3xl">
             <h2 className="text-lg font-bold text-yellow-400">Edit Profile</h2>
             <p className="text-xs text-gray-400 mt-1">
-              Changes will be saved automatically
+              Changes will be saved when you click Save
             </p>
           </div>
 
@@ -489,7 +526,8 @@ const Profile: React.FC = () => {
               fullWidth
               radius="md"
               loading={saving}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold transition-all hover:scale-105 active:scale-95"
+              disabled={saving}
+              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Saving...' : 'Save Changes'}
             </Button>
@@ -515,7 +553,7 @@ const Profile: React.FC = () => {
             <div className="relative group">
               <img
                 className="w-40 h-40 rounded-full border-6 border-mine-shaft-900 shadow-2xl object-cover ring-4 ring-yellow-400/20"
-                src={avatar}
+                src={avatar || "/avatar.png"}
                 alt="Avatar"
               />
               <input

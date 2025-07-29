@@ -20,6 +20,7 @@ public class User {
     @Indexed(unique = true)//email should be unique for every user
     private String email;
     private String password;
+    private byte[] profileLogo;
 
     private AccountType accountType;
     private String profileId;
