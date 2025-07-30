@@ -14,7 +14,6 @@ import HomePages from './Pages/HomePages';
 import FindJob from './Pages/FindJob';
 import FindTalent from './Pages/FindTalent';
 import TalentProfilePage from './Pages/TalentProfilePage';
-import UploadJobPage from './Pages/UploadJobPage';
 import JobDescPage from './Pages/JobDescPage';
 import ApplyJobPage from './Pages/ApplyJobPage';
 import CompanyPage from './Pages/CompanyPage';
@@ -25,6 +24,7 @@ import ProfilePage from './Pages/ProfilePage';
 
 // Components
 import ProtectedRoute from './Components/ProtectedRoute';
+import WildCard from './Pages/WildCard';
 
 function App() {
   const theme = createTheme({
@@ -80,14 +80,7 @@ function App() {
                 } 
               />
               
-              <Route 
-                path="/upload-job" 
-                element={
-                  <ProtectedRoute>
-                    <UploadJobPage />
-                  </ProtectedRoute>
-                } 
-              />
+            
               
               <Route 
                 path="/talent-profile" 
@@ -153,7 +146,7 @@ function App() {
               />
               
               {/* Catch all route for 404 */}
-              <Route path="*" element={<HomePages />} />
+              <Route path="*" element={<WildCard />} />
             </Routes>
           </BrowserRouter>
         </MantineProvider>
