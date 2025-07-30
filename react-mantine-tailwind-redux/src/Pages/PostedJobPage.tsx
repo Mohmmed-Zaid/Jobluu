@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   IconMapPin,
   IconBriefcase,
@@ -6,14 +6,20 @@ import {
   IconBolt,
   IconMail,
   IconStar,
-  IconX, // For closing the modal
+  IconX,
+  IconEdit,
+  IconTrash,
+  IconPlus,
+  IconRefresh,
+  IconSearch,
 } from "@tabler/icons-react";
-import { useNavigate } from "react-router-dom"; // Assuming you have react-router-dom installed
-import Footer from "../footer/Footer"; // Your imported Footer component
-import Header from "../Header/Header"; // Your imported Header component
+import { useNavigate } from "react-router-dom";
+import Footer from "../footer/Footer";
+import Header from "../Header/Header";
+import JobFormModal from "../Components/JobFormModal";
+import { jobService, JobDTO } from '../Services/jobService';
 
-
-// TalentCard component as provided by you, now with onLike prop
+// TalentCard component (keeping the original design)
 interface TalentProps {
   talent: {
     id: number;
@@ -29,17 +35,13 @@ interface TalentProps {
   onLike: (talentId: number) => void;
 }
 
-
 const TalentCard: React.FC<TalentProps> = ({ talent, onLike }) => {
   const navigate = useNavigate();
 
   return (
     <div className="group relative bg-mine-shaft-900 p-3 sm:p-4 rounded-xl sm:rounded-2xl text-white shadow-xl w-[17rem] sm:w-[18rem] h-[16rem] sm:h-[18rem] flex flex-col justify-between transition-all duration-500 hover:scale-105 hover:shadow-2xl hover:shadow-yellow-400/20 border border-slate-700 hover:border-yellow-400/50 backdrop-blur-sm">
-
-      {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-transparent to-yellow-400/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-      {/* Header Section */}
       <div className="relative z-10 flex justify-between items-start">
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="relative">
@@ -82,7 +84,6 @@ const TalentCard: React.FC<TalentProps> = ({ talent, onLike }) => {
         </div>
       </div>
 
-      {/* Skills Section */}
       <div className="relative z-10 flex flex-wrap gap-1 sm:gap-1.5 mt-2 sm:mt-3 min-h-[24px]">
         {talent.skills.slice(0, 4).map((skill, index) => (
           <span
@@ -99,14 +100,12 @@ const TalentCard: React.FC<TalentProps> = ({ talent, onLike }) => {
         )}
       </div>
 
-      {/* Description */}
       <div className="relative z-10 flex-1 mt-2 sm:mt-3">
         <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed overflow-hidden">
           {talent.description}
         </p>
       </div>
 
-      {/* Location and Salary */}
       <div className="relative z-10 flex justify-between items-center mt-2 sm:mt-3 p-2 bg-mine-shaft-800/50 rounded-lg backdrop-blur-sm border border-slate-700/50">
         <div className="flex items-center gap-1 sm:gap-1.5">
           <IconMapPin size={12} className="sm:hidden text-emerald-400" />
@@ -122,7 +121,6 @@ const TalentCard: React.FC<TalentProps> = ({ talent, onLike }) => {
         </div>
       </div>
 
-      {/* View Profile and Like Button */}
       <div className="relative z-10 mt-2 sm:mt-3 flex gap-2">
         <button
           onClick={() => navigate("/talent-profile")}
@@ -153,84 +151,7 @@ const TalentCard: React.FC<TalentProps> = ({ talent, onLike }) => {
   );
 };
 
-
-// Sample data for jobs (with added 'status' and 'skills' for functionality)
-const postedJobs = [
-  {
-    id: 1,
-    title: "Frontend Developer",
-    location: "San Francisco, USA",
-    daysAgo: 5,
-    status: "active",
-    skills: ["React", "JavaScript", "HTML", "CSS", "Tailwind CSS"],
-  },
-  {
-    id: 2,
-    title: "Backend Engineer",
-    location: "London, UK",
-    daysAgo: 2,
-    status: "active",
-    skills: ["Node.js", "Python", "MongoDB", "Express", "REST APIs"],
-  },
-  {
-    id: 3,
-    title: "Full Stack Developer",
-    location: "Sydney, Australia",
-    daysAgo: 4,
-    status: "active",
-    skills: ["React", "Node.js", "TypeScript", "AWS", "PostgreSQL"],
-  },
-  {
-    id: 4,
-    title: "UI/UX Designer",
-    location: "Toronto, Canada",
-    daysAgo: 1,
-    status: "draft",
-    skills: ["Figma", "Sketch", "Adobe XD", "User Research", "Prototyping"],
-  },
-  {
-    id: 5,
-    title: "DevOps Engineer",
-    location: "Berlin, Germany",
-    daysAgo: 3,
-    status: "active",
-    skills: ["Docker", "Kubernetes", "CI/CD", "Ansible", "Terraform"],
-  },
-  {
-    id: 6,
-    title: "Software Engineer",
-    location: "Pune, India",
-    daysAgo: 1,
-    status: "active",
-    skills: ["Java", "Spring Boot", "Microservices", "SQL", "Kafka"],
-  },
-  {
-    id: 7,
-    title: "DevOps ",
-    location: "Berlin, Germany",
-    daysAgo: 8,
-    status: "archived", // Example of another status, though not filtered by buttons
-    skills: ["Linux", "Bash", "Networking", "Cloud Security"],
-  },
-  {
-    id: 8,
-    title: " Java Developer",
-    location: "Berlin, Germany",
-    daysAgo: 1,
-    status: "active",
-    skills: ["Java", "Spring", "Hibernate", "JPA"],
-  },
-  {
-    id: 9,
-    title: "Java Fresher",
-    location: "Pune,India",
-    daysAgo: 1,
-    status: "draft",
-    skills: ["Java", "OOP", "Data Structures", "Algorithms"],
-  },
-];
-
-// Sample data for applicants
+// Sample data for applicants (keeping original)
 const allApplicants = [
   {
     id: 1,
@@ -289,299 +210,540 @@ const allApplicants = [
   },
 ];
 
-// Sample data for invited applicants (subset of allApplicants)
-const invitedApplicants = [
-  allApplicants[0], // Alice Johnson
-  allApplicants[2], // Charlie Brown
-];
-
+const invitedApplicants = [allApplicants[0], allApplicants[2]];
 
 const PostedJobPage = () => {
   const navigate = useNavigate();
-  // State to manage which tab is active (Overview, Applicants, Invited)
+  
+  // State management
   const [activeTab, setActiveTab] = useState("overview");
-  // State to manage which job is currently selected in the left sidebar
-  // Initialize with the first job from the list
-  const [activeJob, setActiveJob] = useState(postedJobs[0]);
-  // State to filter jobs by status (Active, Drafts)
+  const [activeJob, setActiveJob] = useState<JobDTO | null>(null);
   const [filterStatus, setFilterStatus] = useState("active");
-  // State to control the visibility of the scheduling modal
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  // States to store selected date and time for scheduling
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
-  // State to store the applicant for whom the interview is being scheduled
   const [selectedApplicant, setSelectedApplicant] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // New states for backend integration
+  const [jobs, setJobs] = useState<JobDTO[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showJobModal, setShowJobModal] = useState(false);
+  const [editingJob, setEditingJob] = useState<JobDTO | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filter jobs based on the selected status
-  const filteredJobs = postedJobs.filter(job => {
-    // Only show 'active' jobs if filterStatus is 'active'
-    if (filterStatus === "active") {
-      return job.status === "active";
+  // Fetch jobs on component mount
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  // Set first job as active when jobs are loaded
+  useEffect(() => {
+    if (jobs.length > 0 && !activeJob) {
+      setActiveJob(jobs[0]);
     }
-    // Only show 'draft' jobs if filterStatus is 'draft'
-    else if (filterStatus === "draft") {
-      return job.status === "draft";
+  }, [jobs, activeJob]);
+
+  const fetchJobs = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const fetchedJobs = await jobService.getAllJobs();
+      // Calculate days ago for display (mock calculation)
+      const jobsWithDaysAgo = fetchedJobs.map(job => ({
+        ...job,
+        daysAgo: job.daysAgo || Math.floor(Math.random() * 10) + 1
+      }));
+      setJobs(jobsWithDaysAgo);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch jobs');
+      console.error('Error fetching jobs:', err);
+    } finally {
+      setLoading(false);
     }
-    // This case should ideally not be reached with the current button setup
-    return true;
+  };
+
+  // Filter jobs based on status and search term - FIXED VERSION
+  const filteredJobs = jobs.filter(job => {
+    const matchesStatus = filterStatus === 'all' || job.status === filterStatus;
+    const matchesSearch = (job.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (job.location?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
   });
 
-  // Handler for the 'Like' button on TalentCard
+  // Handle job submission (create/update)
+  const handleJobSubmit = async (jobData: JobDTO) => {
+    setIsSubmitting(true);
+    try {
+      if (editingJob && editingJob.id) {
+        // Update existing job
+        const updatedJob = await jobService.updateJob(editingJob.id, jobData);
+        setJobs(prevJobs => 
+          prevJobs.map(job => 
+            job.id === editingJob.id ? updatedJob : job
+          )
+        );
+        // Show success message
+        alert('Job updated successfully!');
+      } else {
+        // Create new job
+        const newJob = await jobService.postJob(jobData);
+        setJobs(prevJobs => [newJob, ...prevJobs]);
+        // Show success message
+        alert('Job posted successfully!');
+      }
+      
+      setShowJobModal(false);
+      setEditingJob(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save job');
+      alert(err instanceof Error ? err.message : 'Failed to save job');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle job deletion
+  const handleDeleteJob = async (jobId: number) => {
+    if (!window.confirm('Are you sure you want to delete this job?')) {
+      return;
+    }
+
+    try {
+      await jobService.deleteJob(jobId);
+      setJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
+      
+      // If deleted job was active, set first job as active
+      if (activeJob?.id === jobId && filteredJobs.length > 1) {
+        const remainingJobs = filteredJobs.filter(job => job.id !== jobId);
+        setActiveJob(remainingJobs[0] || null);
+      }
+      
+      alert('Job deleted successfully!');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete job');
+      alert(err instanceof Error ? err.message : 'Failed to delete job');
+    }
+  };
+
+  // Handle opening edit modal
+  const handleEditJob = (job: JobDTO) => {
+    setEditingJob(job);
+    setShowJobModal(true);
+  };
+
+  // Handle opening create modal
+  const handleCreateJob = () => {
+    setEditingJob(null);
+    setShowJobModal(true);
+  };
+
+  // Close job modal
+  const handleCloseJobModal = () => {
+    setShowJobModal(false);
+    setEditingJob(null);
+  };
+
   const handleLikeTalent = (talentId: number) => {
     console.log(`Liked talent with ID: ${talentId}`);
-    // In a real application, you would send this to a backend API
-    // or update a global state/context. For this example, we'll use an alert.
     alert(`You liked talent ID: ${talentId}`);
   };
 
-  // Function to open the scheduling modal for a specific applicant
   const openScheduleModal = (applicant: any) => {
-    setSelectedApplicant(applicant); // Store the applicant data
-    setShowScheduleModal(true); // Show the modal
+    setSelectedApplicant(applicant);
+    setShowScheduleModal(true);
   };
 
-  // Function to close the scheduling modal and reset its states
   const closeScheduleModal = () => {
     setShowScheduleModal(false);
-    setSelectedDate(""); // Clear selected date
-    setSelectedTime(""); // Clear selected time
-    setSelectedApplicant(null); // Clear selected applicant
+    setSelectedDate("");
+    setSelectedTime("");
+    setSelectedApplicant(null);
   };
 
-  // Handler for submitting the schedule form
   const handleScheduleSubmit = () => {
     if (selectedDate && selectedTime && selectedApplicant) {
       console.log(`Scheduling interview for ${selectedApplicant.name} on ${selectedDate} at ${selectedTime}`);
-      // In a real application, you would send this data to your backend
       alert(`Interview scheduled for ${selectedApplicant.name} on ${selectedDate} at ${selectedTime}`);
-      closeScheduleModal(); // Close modal after submission
+      closeScheduleModal();
     } else {
-      alert("Please select a date and time."); // User feedback for incomplete form
+      alert("Please select a date and time.");
     }
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-mine-shaft-950 text-white">
-      {/* Header Component - Placed here as requested */}
       <Header />
+      
+      {/* Error Display */}
+      {error && (
+        <div className="mx-4 md:mx-8 lg:mx-10 mt-4 p-4 bg-red-900/50 border border-red-500 rounded-lg text-red-200">
+          <div className="flex justify-between items-center">
+            <span>{error}</span>
+            <button 
+              onClick={() => setError(null)}
+              className="text-red-400 hover:text-red-300"
+            >
+              <IconX size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-1 p-4 md:p-8 lg:p-10 border-4 border-yellow-500/20 rounded-2xl m-4 md:m-8 lg:m-10 shadow-lg shadow-yellow-500/10">
         {/* Left Job List Sidebar */}
         <aside className="w-72 border-r-2 border-slate-700/50 p-5 overflow-y-auto rounded-l-xl">
-          <h2 className="text-lg font-bold text-yellow-400 mb-4">Jobs</h2>
-          <div className="flex gap-3 mb-4">
-            {/* Button to filter active jobs */}
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold text-yellow-400">Jobs</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={fetchJobs}
+                className="p-2 text-slate-400 hover:text-yellow-400 transition-colors duration-200"
+                title="Refresh Jobs"
+                disabled={loading}
+              >
+                <IconRefresh size={18} className={loading ? 'animate-spin' : ''} />
+              </button>
+              <button
+                onClick={handleCreateJob}
+                className="p-2 bg-yellow-400 text-black rounded-lg hover:bg-yellow-300 transition-colors duration-200"
+                title="Post New Job"
+              >
+                <IconPlus size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative mb-4">
+            <IconSearch size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search jobs..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-3 py-2 text-sm bg-mine-shaft-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-yellow-400 transition-colors duration-200"
+            />
+          </div>
+
+          {/* Filter Buttons */}
+          <div className="flex gap-2 mb-4 flex-wrap">
             <button
               onClick={() => setFilterStatus("active")}
-              className={`text-sm font-semibold px-3 py-1.5 rounded-md transition-all duration-300 ${
+              className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-all duration-300 ${
                 filterStatus === "active"
-                  ? "text-black bg-yellow-400 shadow-md shadow-yellow-400/30" // Active state styling
-                  : "text-slate-400 border border-slate-700 hover:border-yellow-400 hover:text-white" // Inactive state styling
+                  ? "text-black bg-yellow-400 shadow-md shadow-yellow-400/30"
+                  : "text-slate-400 border border-slate-700 hover:border-yellow-400 hover:text-white"
               }`}
             >
-              Active [{postedJobs.filter(job => job.status === "active").length}]
+              Active [{jobs.filter(job => job.status === "active").length}]
             </button>
-            {/* Button to filter draft jobs */}
             <button
               onClick={() => setFilterStatus("draft")}
-              className={`text-sm font-semibold px-3 py-1.5 rounded-md transition-all duration-300 ${
+              className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-all duration-300 ${
                 filterStatus === "draft"
-                  ? "text-black bg-yellow-400 shadow-md shadow-yellow-400/30" // Active state styling
-                  : "text-slate-400 border border-slate-700 hover:border-yellow-400 hover:text-white" // Inactive state styling
+                  ? "text-black bg-yellow-400 shadow-md shadow-yellow-400/30"
+                  : "text-slate-400 border border-slate-700 hover:border-yellow-400 hover:text-white"
               }`}
             >
-              Drafts [{postedJobs.filter(job => job.status === "draft").length}]
+              Drafts [{jobs.filter(job => job.status === "draft").length}]
+            </button>
+            <button
+              onClick={() => setFilterStatus("all")}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-all duration-300 ${
+                filterStatus === "all"
+                  ? "text-black bg-yellow-400 shadow-md shadow-yellow-400/30"
+                  : "text-slate-400 border border-slate-700 hover:border-yellow-400 hover:text-white"
+              }`}
+            >
+              All [{jobs.length}]
             </button>
           </div>
+
+          {/* Jobs List */}
           <div className="space-y-3">
-            {/* Map through filtered jobs to display them */}
-            {filteredJobs.map((job) => (
-              <div
-                key={job.id}
-                onClick={() => setActiveJob(job)} // Set the active job on click
-                className={`bg-mine-shaft-900 hover:border-yellow-400/50 border ${
-                  activeJob.id === job.id ? "border-yellow-400 shadow-lg shadow-yellow-400/10" : "border-slate-700" // Highlight active job
-                } p-3 rounded-xl cursor-pointer transition-all duration-200`}
-              >
-                <h3 className="font-semibold text-white text-sm">{job.title}</h3>
-                <p className="text-xs text-slate-400">{job.location}</p>
-                <p className="text-xs text-slate-500">{job.daysAgo} days ago</p>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-yellow-400 border-b-transparent"></div>
               </div>
-            ))}
+            ) : filteredJobs.length === 0 ? (
+              <div className="text-center py-8 text-slate-400">
+                {searchTerm || filterStatus !== 'all' ? 'No jobs found' : 'No jobs posted yet'}
+              </div>
+            ) : (
+              filteredJobs.map((job) => (
+                <div
+                  key={job.id}
+                  onClick={() => setActiveJob(job)}
+                  className={`bg-mine-shaft-900 hover:border-yellow-400/50 border ${
+                    activeJob?.id === job.id ? "border-yellow-400 shadow-lg shadow-yellow-400/10" : "border-slate-700"
+                  } p-3 rounded-xl cursor-pointer transition-all duration-200 group`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-white text-sm group-hover:text-yellow-400 transition-colors duration-200">
+                        {job.title || 'Untitled Job'}
+                      </h3>
+                      <p className="text-xs text-slate-400">{job.location || 'Location not specified'}</p>
+                      <p className="text-xs text-slate-500">{job.daysAgo || 0} days ago</p>
+                      <span className={`inline-block px-2 py-1 rounded text-xs font-semibold mt-1 ${
+                        job.status === 'active' 
+                          ? 'bg-green-900/30 text-green-400 border border-green-400/30' 
+                          : 'bg-yellow-900/30 text-yellow-400 border border-yellow-400/30'
+                      }`}>
+                        {(job.status || 'draft').toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditJob(job);
+                        }}
+                        className="p-1 text-slate-400 hover:text-yellow-400 transition-colors duration-200"
+                        title="Edit Job"
+                      >
+                        <IconEdit size={14} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (job.id) handleDeleteJob(job.id);
+                        }}
+                        className="p-1 text-slate-400 hover:text-red-400 transition-colors duration-200"
+                        title="Delete Job"
+                      >
+                        <IconTrash size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </aside>
 
         {/* Center Job Detail / Applicants / Invited Section */}
         <main className="flex-1 p-10 overflow-y-auto bg-mine-shaft-950 rounded-r-xl">
-          <div className="mb-6 pb-4 border-b-2 border-slate-700/50">
-            <h1 className="text-3xl font-bold text-white">
-              {activeJob.title}{" "}
-              {/* Display job status as a badge */}
-              <span className="bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded ml-2 shadow-sm">
-                {activeJob.status.toUpperCase()}
-              </span>
-            </h1>
-            <p className="text-slate-400 mt-1">{activeJob.location}</p>
-          </div>
-
-          {/* Tabs for Overview, Applicants, Invited */}
-          <div className="flex gap-6 border-b border-slate-700 mb-6">
-            <button
-              onClick={() => setActiveTab("overview")}
-              className={`py-2 px-1 font-semibold transition-colors duration-300 ${
-                activeTab === "overview"
-                  ? "text-yellow-400 border-b-2 border-yellow-400"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveTab("applicants")}
-              className={`py-2 px-1 font-semibold transition-colors duration-300 ${
-                activeTab === "applicants"
-                  ? "text-yellow-400 border-b-2 border-yellow-400"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Applicants [{allApplicants.length}]
-            </button>
-            <button
-              onClick={() => setActiveTab("invited")}
-              className={`py-2 px-1 font-semibold transition-colors duration-300 ${
-                activeTab === "invited"
-                  ? "text-yellow-400 border-b-2 border-yellow-400"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              Invited [{invitedApplicants.length}]
-            </button>
-          </div>
-
-          {/* Conditional rendering based on activeTab */}
-          {activeTab === "overview" && (
-            <div className="bg-mine-shaft-900 border border-slate-700 rounded-xl p-6 shadow-lg">
-              <div className="flex items-center gap-4 mb-4 pb-4 border-b border-slate-700/50">
-                <div className="w-14 h-14 bg-white rounded-lg flex items-center justify-center shadow-md">
-                  {/* Placeholder for company logo */}
-                  <img src="/google.png" alt="Company Logo" className="w-10 h-10 object-contain" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-white">
-                    {activeJob.title}
-                  </h3>
-                  <p className="text-sm text-slate-400">
-                    Google • {activeJob.daysAgo} days ago • 48 Applicants {/* Placeholder values */}
-                  </p>
-                </div>
-                <div className="ml-auto flex gap-2">
-                  <button className="px-4 py-1.5 text-sm bg-yellow-400 text-black rounded-md font-semibold hover:bg-yellow-300 transition-colors shadow-md">
-                    Edit
-                  </button>
-                  <button className="px-4 py-1.5 text-sm border border-red-500 text-red-500 rounded-md font-semibold hover:bg-red-500 hover:text-white transition-colors shadow-md">
-                    Delete
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6">
-                <div className="flex flex-col items-center p-3 bg-mine-shaft-800 rounded-lg border border-slate-700/50 shadow-sm">
-                  <IconMapPin size={24} className="text-yellow-400 mb-1" />
-                  <p className="text-sm text-slate-400">Location</p>
-                  <p className="font-semibold text-white">{activeJob.location}</p>
-                </div>
-                <div className="flex flex-col items-center p-3 bg-mine-shaft-800 rounded-lg border border-slate-700/50 shadow-sm">
-                  <IconBriefcase size={24} className="text-yellow-400 mb-1" />
-                  <p className="text-sm text-slate-400">Experience</p>
-                  <p className="font-semibold text-white">Expert</p>{" "}
-                  {/* Static for now, can be dynamic from activeJob */}
-                </div>
-                <div className="flex flex-col items-center p-3 bg-mine-shaft-800 rounded-lg border border-slate-700/50 shadow-sm">
-                  <IconCurrencyDollar size={24} className="text-yellow-400 mb-1" />
-                  <p className="text-sm text-slate-400">Salary</p>
-                  <p className="font-semibold text-white">48 LPA</p>{" "}
-                  {/* Static for now, can be dynamic from activeJob */}
-                </div>
-                <div className="flex flex-col items-center p-3 bg-mine-shaft-800 rounded-lg border border-slate-700/50 shadow-sm">
-                  <IconBolt size={24} className="text-yellow-400 mb-1" />
-                  <p className="text-sm text-slate-400">Job Type</p>
-                  <p className="font-semibold text-white">Full Time</p>{" "}
-                  {/* Static for now, can be dynamic from activeJob */}
-                </div>
-              </div>
-
-              <div className="mt-10">
-                <h3 className="text-lg font-semibold text-yellow-400 mb-2">Required Skills</h3>
-                <div className="flex flex-wrap gap-3">
-                  {/* Display skills for the active job */}
-                  {activeJob.skills.map((skill, i) => (
-                    <span
-                      key={i}
-                      className="bg-slate-800 px-3 py-1 rounded-full text-sm text-white border border-slate-600 transition-colors duration-200 hover:bg-slate-700"
+          {activeJob ? (
+            <>
+              <div className="mb-6 pb-4 border-b-2 border-slate-700/50">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h1 className="text-3xl font-bold text-white">
+                      {activeJob.title || 'Untitled Job'}{" "}
+                      <span className={`text-xs font-bold px-2 py-1 rounded ml-2 shadow-sm ${
+                        activeJob.status === 'active' 
+                          ? 'bg-green-500 text-black' 
+                          : 'bg-yellow-500 text-black'
+                      }`}>
+                        {(activeJob.status || 'draft').toUpperCase()}
+                      </span>
+                    </h1>
+                    <p className="text-slate-400 mt-1">{activeJob.location || 'Location not specified'}</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handleEditJob(activeJob)}
+                      className="flex items-center gap-2 px-4 py-2 bg-yellow-400 text-black rounded-lg font-semibold hover:bg-yellow-300 transition-colors duration-200 shadow-md"
                     >
-                      {skill}
-                    </span>
+                      <IconEdit size={16} />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => activeJob.id && handleDeleteJob(activeJob.id)}
+                      className="flex items-center gap-2 px-4 py-2 border border-red-500 text-red-500 rounded-lg font-semibold hover:bg-red-500 hover:text-white transition-colors duration-200 shadow-md"
+                    >
+                      <IconTrash size={16} />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex gap-6 border-b border-slate-700 mb-6">
+                <button
+                  onClick={() => setActiveTab("overview")}
+                  className={`py-2 px-1 font-semibold transition-colors duration-300 ${
+                    activeTab === "overview"
+                      ? "text-yellow-400 border-b-2 border-yellow-400"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Overview
+                </button>
+                <button
+                  onClick={() => setActiveTab("applicants")}
+                  className={`py-2 px-1 font-semibold transition-colors duration-300 ${
+                    activeTab === "applicants"
+                      ? "text-yellow-400 border-b-2 border-yellow-400"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Applicants [{allApplicants.length}]
+                </button>
+                <button
+                  onClick={() => setActiveTab("invited")}
+                  className={`py-2 px-1 font-semibold transition-colors duration-300 ${
+                    activeTab === "invited"
+                      ? "text-yellow-400 border-b-2 border-yellow-400"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Invited [{invitedApplicants.length}]
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              {activeTab === "overview" && (
+                <div className="bg-mine-shaft-900 border border-slate-700 rounded-xl p-6 shadow-lg">
+                  <div className="flex items-center gap-4 mb-6 pb-4 border-b border-slate-700/50">
+                    <div className="w-14 h-14 bg-white rounded-lg flex items-center justify-center shadow-md">
+                      <img src="/google.png" alt="Company Logo" className="w-10 h-10 object-contain" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-white">
+                        {activeJob.title || 'Untitled Job'}
+                      </h3>
+                      <p className="text-sm text-slate-400">
+                        {activeJob.companyName || 'Company'} • {activeJob.daysAgo || 0} days ago • 48 Applicants
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6">
+                    <div className="flex flex-col items-center p-4 bg-mine-shaft-800 rounded-lg border border-slate-700/50 shadow-sm">
+                      <IconMapPin size={24} className="text-yellow-400 mb-2" />
+                      <p className="text-sm text-slate-400">Location</p>
+                      <p className="font-semibold text-white text-center">{activeJob.location || 'Not specified'}</p>
+                    </div>
+                    <div className="flex flex-col items-center p-4 bg-mine-shaft-800 rounded-lg border border-slate-700/50 shadow-sm">
+                      <IconBriefcase size={24} className="text-yellow-400 mb-2" />
+                      <p className="text-sm text-slate-400">Experience</p>
+                      <p className="font-semibold text-white">{activeJob.experienceLevel || 'Not specified'}</p>
+                    </div>
+                    <div className="flex flex-col items-center p-4 bg-mine-shaft-800 rounded-lg border border-slate-700/50 shadow-sm">
+                      <IconCurrencyDollar size={24} className="text-yellow-400 mb-2" />
+                      <p className="text-sm text-slate-400">Salary</p>
+                      <p className="font-semibold text-white">{activeJob.salary || 'Not specified'}</p>
+                    </div>
+                    <div className="flex flex-col items-center p-4 bg-mine-shaft-800 rounded-lg border border-slate-700/50 shadow-sm">
+                      <IconBolt size={24} className="text-yellow-400 mb-2" />
+                      <p className="text-sm text-slate-400">Job Type</p>
+                      <p className="font-semibold text-white">{activeJob.jobType || 'Full Time'}</p>
+                    </div>
+                  </div>
+
+                  {activeJob.skills && activeJob.skills.length > 0 && (
+                    <div className="mt-8">
+                      <h3 className="text-lg font-semibold text-yellow-400 mb-4">Required Skills</h3>
+                      <div className="flex flex-wrap gap-3">
+                        {activeJob.skills.map((skill, i) => (
+                          <span
+                            key={i}
+                            className="bg-slate-800 px-3 py-2 rounded-full text-sm text-white border border-slate-600 transition-colors duration-200 hover:bg-slate-700"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {activeJob.description && (
+                    <div className="mt-8">
+                      <h3 className="text-lg font-semibold text-yellow-400 mb-4">Job Description</h3>
+                      <div className="bg-mine-shaft-800 border border-slate-700/50 rounded-lg p-4">
+                        <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">
+                          {activeJob.description}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "applicants" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {allApplicants.map((applicant) => (
+                    <div key={applicant.id} className="bg-mine-shaft-900 border border-slate-700 rounded-xl p-4 shadow-lg">
+                      <TalentCard talent={applicant} onLike={handleLikeTalent} />
+                      <div className="flex gap-2 mt-4">
+                        <button
+                          onClick={() => navigate("/talent-profile")}
+                          className="flex-1 px-4 py-2 text-sm bg-yellow-400 text-black rounded-md font-semibold hover:bg-yellow-300 transition-colors shadow-md"
+                        >
+                          Profile
+                        </button>
+                        <button
+                          onClick={() => openScheduleModal(applicant)}
+                          className="flex-1 px-4 py-2 text-sm border border-slate-500 text-slate-300 rounded-md font-semibold hover:bg-slate-700 hover:text-white transition-colors shadow-md"
+                        >
+                          Schedule
+                        </button>
+                      </div>
+                    </div>
                   ))}
                 </div>
+              )}
+
+              {activeTab === "invited" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {invitedApplicants.map((applicant) => (
+                    <div key={applicant.id} className="bg-mine-shaft-900 border border-slate-700 rounded-xl p-4 shadow-lg">
+                      <TalentCard talent={applicant} onLike={handleLikeTalent} />
+                      <div className="flex gap-2 mt-4">
+                        <button
+                          onClick={() => navigate("/talent-profile")}
+                          className="flex-1 px-4 py-2 text-sm bg-yellow-400 text-black rounded-md font-semibold hover:bg-yellow-300 transition-colors shadow-md"
+                        >
+                          Profile
+                        </button>
+                        <button
+                          onClick={() => openScheduleModal(applicant)}
+                          className="flex-1 px-4 py-2 text-sm border border-slate-500 text-slate-300 rounded-md font-semibold hover:bg-slate-700 hover:text-white transition-colors shadow-md"
+                        >
+                          Schedule
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center py-12">
+              <div className="w-24 h-24 bg-mine-shaft-800 rounded-full flex items-center justify-center mb-6">
+                <IconBriefcase size={48} className="text-slate-600" />
               </div>
-            </div>
-          )}
-
-          {activeTab === "applicants" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Map through all applicants to display their cards */}
-              {allApplicants.map((applicant) => (
-                <div key={applicant.id} className="bg-mine-shaft-900 border border-slate-700 rounded-xl p-4 shadow-lg">
-                  <TalentCard talent={applicant} onLike={handleLikeTalent} />
-                  <div className="flex gap-2 mt-4">
-                    <button
-                      onClick={() => navigate("/talent-profile")} // Navigate to talent profile
-                      className="flex-1 px-4 py-2 text-sm bg-yellow-400 text-black rounded-md font-semibold hover:bg-yellow-300 transition-colors shadow-md"
-                    >
-                      Profile
-                    </button>
-                    <button
-                      onClick={() => openScheduleModal(applicant)} // Open schedule modal
-                      className="flex-1 px-4 py-2 text-sm border border-slate-500 text-slate-300 rounded-md font-semibold hover:bg-slate-700 hover:text-white transition-colors shadow-md"
-                    >
-                      Schedule
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === "invited" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Map through invited applicants to display their cards */}
-              {invitedApplicants.map((applicant) => (
-                <div key={applicant.id} className="bg-mine-shaft-900 border border-slate-700 rounded-xl p-4 shadow-lg">
-                  <TalentCard talent={applicant} onLike={handleLikeTalent} />
-                  <div className="flex gap-2 mt-4">
-                    <button
-                      onClick={() => navigate("/talent-profile")} // Navigate to talent profile
-                      className="flex-1 px-4 py-2 text-sm bg-yellow-400 text-black rounded-md font-semibold hover:bg-yellow-300 transition-colors shadow-md"
-                    >
-                      Profile
-                    </button>
-                    <button
-                      onClick={() => openScheduleModal(applicant)} // Open schedule modal
-                      className="flex-1 px-4 py-2 text-sm border border-slate-500 text-slate-300 rounded-md font-semibold hover:bg-slate-700 hover:text-white transition-colors shadow-md"
-                    >
-                      Schedule
-                    </button>
-                  </div>
-                </div>
-              ))}
+              <h2 className="text-2xl font-bold text-slate-400 mb-2">No Jobs Found</h2>
+              <p className="text-slate-500 mb-6">Start by posting your first job to attract talented candidates.</p>
+              <button
+                onClick={handleCreateJob}
+                className="flex items-center gap-2 px-6 py-3 bg-yellow-400 text-black rounded-lg font-semibold hover:bg-yellow-300 transition-colors duration-200 shadow-md"
+              >
+                <IconPlus size={20} />
+                Post Your First Job
+              </button>
             </div>
           )}
         </main>
       </div>
-      {/* Footer Component - Placed here as requested */}
+
       <Footer />
 
-      {/* Schedule Modal - Conditionally rendered */}
+      {/* Job Form Modal */}
+      <JobFormModal
+        isOpen={showJobModal}
+        onClose={handleCloseJobModal}
+        onSubmit={handleJobSubmit}
+        editJob={editingJob}
+        isLoading={isSubmitting}
+      />
+
+      {/* Schedule Modal */}
       {showScheduleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
           <div className="bg-mine-shaft-900 p-8 rounded-lg shadow-xl w-96 border border-slate-700 relative">
