@@ -3,9 +3,7 @@ package com.Cubix.Jobluu.entities;
 import com.Cubix.Jobluu.dto.Applicant;
 import com.Cubix.Jobluu.dto.JobDTO;
 import com.Cubix.Jobluu.dto.JobStatus;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -19,7 +17,8 @@ public class Job {
     private Long id;
     private String jobTitle;
     private String company;
-    private List <Applicant> applicant;
+    private String companyLogo;
+    private List<Applicant> applicant;
     private String about;
     private String exprience;
     private String jobType;
@@ -30,12 +29,12 @@ public class Job {
     private List<String> skillsRequired;
     private JobStatus jobStatus;
 
-
     public JobDTO toDTO() {
         return new JobDTO(
                 this.id,
                 this.jobTitle,
                 this.company,
+                this.companyLogo,
                 this.applicant,
                 this.about,
                 this.exprience,
@@ -47,4 +46,5 @@ public class Job {
                 this.skillsRequired,
                 this.jobStatus
         );
-}}
+    }
+}

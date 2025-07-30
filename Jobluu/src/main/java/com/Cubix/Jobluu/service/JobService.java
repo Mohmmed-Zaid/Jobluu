@@ -14,4 +14,11 @@ public interface JobService {
 
    JobDTO getJobById(Long id) throws JobluuException;
 
+   JobDTO updateJob(Long id, JobDTO updatedJob) throws JobluuException;
+
+   void deleteJobById(Long id) throws JobluuException;
+
+   List<JobDTO> getJobsByStatus(String status);
+
+   List<JobDTO> searchJobs(String query);
 }

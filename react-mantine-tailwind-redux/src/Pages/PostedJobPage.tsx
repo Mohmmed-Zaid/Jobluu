@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   IconMapPin,
@@ -273,12 +274,12 @@ const PostedJobPage = () => {
   });
 
   // Handle job submission (create/update)
-  const handleJobSubmit = async (jobData: JobDTO) => {
+  const handleJobSubmit = async (jobData: JobDTO, logoFile?: File) => {
     setIsSubmitting(true);
     try {
       if (editingJob && editingJob.id) {
         // Update existing job
-        const updatedJob = await jobService.updateJob(editingJob.id, jobData);
+        const updatedJob = await jobService.updateJob(editingJob.id, jobData, logoFile);
         setJobs(prevJobs => 
           prevJobs.map(job => 
             job.id === editingJob.id ? updatedJob : job
@@ -288,7 +289,12 @@ const PostedJobPage = () => {
         alert('Job updated successfully!');
       } else {
         // Create new job
-        const newJob = await jobService.postJob(jobData);
+        let newJob;
+        if (logoFile) {
+          newJob = await jobService.postJobWithLogo(jobData, logoFile);
+        } else {
+          newJob = await jobService.postJob(jobData);
+        }
         setJobs(prevJobs => [newJob, ...prevJobs]);
         // Show success message
         alert('Job posted successfully!');
@@ -601,7 +607,14 @@ const PostedJobPage = () => {
                 <div className="bg-mine-shaft-900 border border-slate-700 rounded-xl p-6 shadow-lg">
                   <div className="flex items-center gap-4 mb-6 pb-4 border-b border-slate-700/50">
                     <div className="w-14 h-14 bg-white rounded-lg flex items-center justify-center shadow-md">
-                      <img src="/google.png" alt="Company Logo" className="w-10 h-10 object-contain" />
+                      <img 
+                        src={activeJob.logoUrl || "/google.png"} 
+                        alt="Company Logo" 
+                        className="w-10 h-10 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = "/google.png";
+                        }}
+                      />
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold text-white">

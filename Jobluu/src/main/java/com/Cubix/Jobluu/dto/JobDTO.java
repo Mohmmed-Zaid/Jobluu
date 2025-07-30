@@ -1,19 +1,20 @@
 package com.Cubix.Jobluu.dto;
 
 import com.Cubix.Jobluu.entities.Job;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Data@NoArgsConstructor@AllArgsConstructor
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class JobDTO {
 
     private Long id;
     private String jobTitle;
     private String company;
+    private String companyLogo;
     private List<Applicant> applicant;
     private String about;
     private String exprience;
@@ -21,16 +22,16 @@ public class JobDTO {
     private String location;
     private Long packageOffered;
     private LocalDateTime postTime;
-    private String Description;
+    private String description;
     private List<String> skillsRequired;
     private JobStatus jobStatus;
-
 
     public Job toEntity() {
         return new Job(
                 this.id,
                 this.jobTitle,
                 this.company,
+                this.companyLogo,
                 this.applicant,
                 this.about,
                 this.exprience,
@@ -38,13 +39,9 @@ public class JobDTO {
                 this.location,
                 this.packageOffered,
                 this.postTime,
-                this.Description,
+                this.description,
                 this.skillsRequired,
                 this.jobStatus
         );
     }
-
 }
-
-
-

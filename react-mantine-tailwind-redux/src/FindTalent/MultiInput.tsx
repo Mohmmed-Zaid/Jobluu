@@ -1,19 +1,31 @@
-import React from "react";
+import React, { useState } from "react";
 import { TextInput, Select } from "@mantine/core";
 import SearchDataTalent from "../FindTalent/SearchDataTalent";
 
-// Define an interface for each item in SearchDataTalent.
 interface SearchDataItem {
   icon: React.ElementType;
   placeholder: string;
   type: "text" | "select";
+  key: string; // unique key for each input field
   data?: string[];
+}
+
+interface MultiInputProps {
+  onFilterChange: (filters: Record<string, string>) => void;
 }
 
 const iconClass =
   "absolute left-4 top-1/2 -translate-y-1/2 text-yellow-400 pointer-events-none z-10";
 
-const MultiInput = () => {
+const MultiInput: React.FC<MultiInputProps> = ({ onFilterChange }) => {
+  const [filters, setFilters] = useState<Record<string, string>>({});
+
+  const handleChange = (key: string, value: string | null) => {
+    const updated = { ...filters, [key]: value || "" };
+    setFilters(updated);
+    onFilterChange(updated); // send updated filters to parent
+  };
+
   return (
     <div className="w-full px-6 py-4 bg-mine-shaft-950 rounded-xl shadow-md">
       <div className="flex gap-6 flex-wrap justify-center lg:justify-between xl:gap-8">
@@ -34,6 +46,7 @@ const MultiInput = () => {
                   className="w-full"
                   searchable
                   clearable
+                  onChange={(value) => handleChange(item.key, value)}
                   styles={{
                     input: {
                       backgroundColor: "#2d2d2d",
@@ -65,6 +78,7 @@ const MultiInput = () => {
                 <TextInput
                   placeholder={item.placeholder}
                   className="w-full"
+                  onChange={(e) => handleChange(item.key, e.target.value)}
                   styles={{
                     input: {
                       backgroundColor: "#2d2d2d",

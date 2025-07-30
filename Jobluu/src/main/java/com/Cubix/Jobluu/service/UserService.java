@@ -17,4 +17,6 @@ public interface UserService {
     Boolean verifyOTP(String email, String otp) throws JobluuException;
 
     ResponseDto changePassword(@Valid LoginDto loginDto) throws JobluuException;
+
+
 }
