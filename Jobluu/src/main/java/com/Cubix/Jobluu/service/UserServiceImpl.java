@@ -1,11 +1,13 @@
 package com.Cubix.Jobluu.service;
 
 import com.Cubix.Jobluu.dto.LoginDto;
+import com.Cubix.Jobluu.dto.NotificationDTO;
 import com.Cubix.Jobluu.dto.ResponseDto;
 import com.Cubix.Jobluu.dto.UserDto;
 import com.Cubix.Jobluu.entities.OTP;
 import com.Cubix.Jobluu.entities.User;
 import com.Cubix.Jobluu.exception.JobluuException;
+import com.Cubix.Jobluu.repositories.NotificationRepository;
 import com.Cubix.Jobluu.repositories.OTPRepository;
 import com.Cubix.Jobluu.repositories.UserRepository;
 import com.Cubix.Jobluu.utility.Data;
@@ -39,6 +41,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private ProfileService profileService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Override
     public UserDto registerUser(UserDto userDto) throws JobluuException {
@@ -88,7 +93,11 @@ public class UserServiceImpl implements UserService {
 
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
-
+        NotificationDTO notificication = new NotificationDTO();
+        notificication.setId(user.getId());
+        notificication.setMessage("Password has Reset Successfully");
+        notificication.setAction("Password Reset");
+        notificationService.sendNotification(notificication);
         return new ResponseDto("PASSWORD_CHANGED_SUCCESSFULLY", true);
     }
 
