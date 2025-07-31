@@ -83,7 +83,7 @@ function App() {
             
               
               <Route 
-                path="/talent-profile" 
+                path="/talent-profile/:id" 
                 element={
                   <ProtectedRoute>
                     <TalentProfilePage />

@@ -1,7 +1,3 @@
-// SearchDataTalent.ts
-// This file defines the configuration for the search input fields
-// specifically for the "Find Talent" section.
-
 import {
   IconBriefcase,
   IconMapPin,
@@ -12,24 +8,28 @@ import {
 
 const SearchDataTalent = [
   {
-    icon: IconBriefcase, // Icon for job title/role
+    icon: IconBriefcase,
     placeholder: "Role (e.g., Software Engineer)",
-    type: "text",
+    type: "text" as const,
+    key: "role", // Add unique key
   },
   {
-    icon: IconMapPin, // Icon for location
+    icon: IconMapPin,
     placeholder: "Location (e.g., Pune)",
-    type: "text",
+    type: "text" as const,
+    key: "location", // Add unique key
   },
   {
-    icon: IconStars, // Icon for skills
+    icon: IconStars,
     placeholder: "Skills (e.g., React, Python)",
-    type: "text",
+    type: "text" as const,
+    key: "skills", // Add unique key
   },
   {
-    icon: IconCurrencyDollar, // Icon for expected salary
+    icon: IconCurrencyDollar,
     placeholder: "Expected Salary",
-    type: "select", // Using select for salary ranges
+    type: "select" as const,
+    key: "salary", // Add unique key
     data: [
       "10 - 20 LPA",
       "20 - 30 LPA",
@@ -40,12 +40,12 @@ const SearchDataTalent = [
     ],
   },
   {
-    icon: IconCalendarEvent, // Icon for experience level
+    icon: IconCalendarEvent,
     placeholder: "Experience Level",
-    type: "select", // Using select for experience levels
+    type: "select" as const,
+    key: "experience", // Add unique key
     data: ["Entry-level", "Junior", "Mid-level", "Senior", "Lead", "Principal"],
   },
 ];
 
 export default SearchDataTalent;
-

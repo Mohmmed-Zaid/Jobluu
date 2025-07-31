@@ -6,7 +6,7 @@ interface SearchDataItem {
   icon: React.ElementType;
   placeholder: string;
   type: "text" | "select";
-  key: string; // unique key for each input field
+  key: string;
   data?: string[];
 }
 
@@ -23,7 +23,7 @@ const MultiInput: React.FC<MultiInputProps> = ({ onFilterChange }) => {
   const handleChange = (key: string, value: string | null) => {
     const updated = { ...filters, [key]: value || "" };
     setFilters(updated);
-    onFilterChange(updated); // send updated filters to parent
+    onFilterChange(updated);
   };
 
   return (
@@ -34,7 +34,7 @@ const MultiInput: React.FC<MultiInputProps> = ({ onFilterChange }) => {
 
           return (
             <div
-              key={index}
+              key={item.key || index} // Use item.key for better performance
               className="relative w-64 min-w-[240px] flex-shrink-0"
             >
               <IconComponent size={20} className={iconClass} />

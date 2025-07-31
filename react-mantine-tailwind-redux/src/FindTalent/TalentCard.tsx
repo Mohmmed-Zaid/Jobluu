@@ -108,10 +108,10 @@ const TalentCard: React.FC<TalentProps> = ({ talent }) => {
         </div>
       </div>
 
-      {/* View Profile Button */}
+      {/* View Profile Button - CHANGED: Pass talent ID in URL */}
       <div className="relative z-10 mt-2 sm:mt-3">
         <button
-          onClick={() => navigate("/talent-profile")}
+          onClick={() => navigate(`/talent-profile/${talent.id}`)}
           className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black text-xs sm:text-sm font-bold px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-yellow-400/30 active:scale-95 transform"
         >
           View Profile
@@ -121,4 +121,4 @@ const TalentCard: React.FC<TalentProps> = ({ talent }) => {
   );
 };
 
-export default TalentCard;  
+export default TalentCard;

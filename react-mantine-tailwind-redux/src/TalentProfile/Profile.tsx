@@ -9,11 +9,38 @@ import {
   IconShare,
   IconBookmark,
 } from "@tabler/icons-react";
-import ExpCard from "./ExpCard"; // Ensure this exists
+import ExpCard from "./ExpCard";
 import RecommendTalent from "./RecommendTalent";
 import CertificateCard from "./CertificateCard";
 
-const Profile = () => {
+interface ProfileProps {
+  talent: {
+    id: number;
+    avatar: string;
+    name: string;
+    title: string;
+    skills: string[];
+    description: string;
+    expectedSalary: string;
+    location: string;
+    experienceLevel: string;
+  };
+}
+
+const Profile: React.FC<ProfileProps> = ({ talent }) => {
+  // Calculate years of experience based on experience level
+  const getExperienceYears = (level: string) => {
+    switch (level.toLowerCase()) {
+      case 'entry-level': return '0-1 Years';
+      case 'junior': return '1-3 Years';
+      case 'mid-level': return '3-6 Years';
+      case 'senior': return '6-10 Years';
+      case 'lead': return '10+ Years';
+      case 'principal': return '15+ Years';
+      default: return '5+ Years';
+    }
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto bg-mine-shaft-900 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50">
       {/* Banner */}
@@ -39,11 +66,11 @@ const Profile = () => {
           <div className="relative">
             <img
               className="w-40 h-40 rounded-full border-6 border-mine-shaft-900 shadow-2xl object-cover ring-4 ring-yellow-400/20"
-              src="/avatar.png"
-              alt="Avatar"
+              src={talent.avatar}
+              alt={talent.name}
               onError={(e) =>
                 (e.currentTarget.src =
-                  "https://placehold.co/160x160/4f4f4f/ffffff?text=JW")
+                  "https://placehold.co/160x160/4f4f4f/ffffff?text=" + talent.name.split(' ').map(n => n[0]).join(''))
               }
             />
             <div className="absolute bottom-4 right-4 w-6 h-6 bg-green-500 rounded-full border-4 border-mine-shaft-900 animate-pulse shadow-lg" />
@@ -63,13 +90,13 @@ const Profile = () => {
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                Jarrod Wood
+                {talent.name}
               </h2>
-              <p className="text-lg text-yellow-400 font-semibold mt-1">Software Engineer</p>
+              <p className="text-lg text-yellow-400 font-semibold mt-1">{talent.title}</p>
               <div className="flex items-center gap-4 mt-3 text-sm text-gray-400">
                 <div className="flex items-center">
                   <IconBriefcase size={16} className="mr-1.5 text-yellow-400" />
-                  5+ Years Experience
+                  {getExperienceYears(talent.experienceLevel)} Experience
                 </div>
                 <div className="flex items-center">
                   <IconCalendar size={16} className="mr-1.5 text-yellow-400" />
@@ -90,7 +117,7 @@ const Profile = () => {
 
         <div className="flex items-center text-gray-300 mb-6 bg-mine-shaft-800/50 px-4 py-3 rounded-xl border border-slate-700/50">
           <IconMapPin className="h-5 w-5 mr-2 text-yellow-400" />
-          <span className="font-medium">Pune, India</span>
+          <span className="font-medium">{talent.location}</span>
           <span className="ml-auto text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
             Open to Remote
           </span>
@@ -117,16 +144,15 @@ const Profile = () => {
         <div className="mb-6">
           <h3 className="text-white font-semibold mb-3 text-lg">About</h3>
           <div className="text-gray-300 text-sm leading-relaxed bg-mine-shaft-800/30 p-4 rounded-xl border border-slate-700/30">
-            Experienced software engineer passionate about building scalable web applications
-            and clean user experiences. Specialized in React, Node.js, and system design.
+            {talent.description}
           </div>
         </div>
 
         {/* Skills */}
-        <div className="mb-8">
+        <div className="mb-6">
           <h3 className="text-white font-semibold mb-3 text-lg">Core Skills</h3>
           <div className="flex flex-wrap gap-2">
-            {["React", "Node.js", "TypeScript", "Python", "AWS", "MongoDB"].map((skill) => (
+            {talent.skills.slice(0, 6).map((skill) => (
               <span
                 key={skill}
                 className="bg-mine-shaft-800 hover:bg-mine-shaft-700 text-gray-300 hover:text-white px-3 py-2 rounded-full text-sm border border-slate-700/50 hover:border-yellow-400/50 transition cursor-pointer"
@@ -134,9 +160,20 @@ const Profile = () => {
                 {skill}
               </span>
             ))}
-            <span className="text-yellow-400 px-3 py-2 rounded-full text-sm cursor-pointer hover:bg-yellow-400/10 transition">
-              +12 more
-            </span>
+            {talent.skills.length > 6 && (
+              <span className="text-yellow-400 px-3 py-2 rounded-full text-sm cursor-pointer hover:bg-yellow-400/10 transition">
+                +{talent.skills.length - 6} more
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Expected Salary */}
+        <div className="mb-8">
+          <h3 className="text-white font-semibold mb-3 text-lg">Expected Salary</h3>
+          <div className="bg-mine-shaft-800/50 px-4 py-3 rounded-xl border border-slate-700/50 inline-block">
+            <span className="text-yellow-400 font-bold text-lg">{talent.expectedSalary}</span>
+            <span className="text-gray-400 text-sm ml-2">per annum</span>
           </div>
         </div>
 
@@ -159,7 +196,6 @@ const Profile = () => {
 
         {/* Recommend Talent Card */}
         <RecommendTalent />
-
       </div>
     </div>
   );
