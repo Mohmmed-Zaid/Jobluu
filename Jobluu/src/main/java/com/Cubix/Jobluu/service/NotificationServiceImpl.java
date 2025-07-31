@@ -19,7 +19,7 @@ public class NotificationServiceImpl implements NotificationService{
 
     @Override
     public void sendNotification(NotificationDTO notificationDTO) {
-        notificationDTO.setId(Utilities.getNextSequence("notification"));
+        notificationDTO.setUserId(Utilities.getNextSequence("notification"));
         notificationDTO.setStatus(NotificationStatus.UNREAD);
         notificationDTO.setTimestamp(LocalDateTime.now());
         notificationRepository.save(notificationDTO.toEntity());
