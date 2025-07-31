@@ -100,14 +100,15 @@ function App() {
                 } 
               />
               
-              <Route 
-                path="/apply-job" 
+             
+              <Route
+                path="/apply-job/:jobId"
                 element={
                   <ProtectedRoute>
                     <ApplyJobPage />
-                  </ProtectedRoute>
-                } 
-              />
+                    </ProtectedRoute>}
+                 />
+                 
               
               <Route 
                 path="/company" 

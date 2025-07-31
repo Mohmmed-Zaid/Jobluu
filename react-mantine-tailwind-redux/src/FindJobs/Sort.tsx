@@ -1,23 +1,24 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Button,
   Combobox,
   useCombobox,
-  Text,
-  Box,
 } from "@mantine/core";
 import { IconAdjustments } from "@tabler/icons-react";
 
 const optionsData = [
   "Relevance",
-  "Most Recent",
+  "Most Recent", 
   "Salary (Low to High)",
   "Salary (High to Low)",
 ];
 
-const Sort = () => {
-  const [selectedItem, setSelectedItem] = useState<string | null>("Relevance");
+interface SortProps {
+  sortBy: string;
+  setSortBy: (value: string) => void;
+}
 
+const Sort: React.FC<SortProps> = ({ sortBy, setSortBy }) => {
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
   });
@@ -35,7 +36,7 @@ const Sort = () => {
       position="bottom-start"
       withArrow
       onOptionSubmit={(val) => {
-        setSelectedItem(val);
+        setSortBy(val);
         combobox.closeDropdown();
       }}
     >
@@ -45,7 +46,7 @@ const Sort = () => {
           onClick={() => combobox.toggleDropdown()}
         >
           <span className="text-white text-sm">
-            {selectedItem || "Sort by"}
+            {sortBy || "Sort by"}
           </span>
           <IconAdjustments size={18} className="text-yellow-400" />
         </div>

@@ -1,13 +1,16 @@
-// import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { IconArrowLeft, IconUpload, IconCheck } from "@tabler/icons-react";
 import { RingLoader } from "react-spinners";
 import React, { useEffect, useState } from "react";
+import { Job } from "../Pages/FindJob"; // Import your Job type
 
 const ApplyJob = () => {
   const navigate = useNavigate();
+  const { jobId } = useParams();
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(5);
+  const [jobData, setJobData] = useState<Job | null>(null);
+  const [jobLoading, setJobLoading] = useState(true);
 
   const [form, setForm] = useState({
     name: "",
@@ -17,6 +20,32 @@ const ApplyJob = () => {
     cv: null,
     coverLetter: "",
   });
+useEffect(() => {
+  const fetchJobData = async () => {
+    try {
+      setJobLoading(true);
+
+      const response = await fetch(`http://localhost:8080/jobs/${jobId}`);
+      if (!response.ok) {
+        throw new Error('Job not found in API');
+      }
+
+      const job = await response.json();
+      setJobData(job);
+    } catch (error) {
+      console.error('Error fetching job data:', error);
+      navigate('/find-jobs');
+    } finally {
+      setJobLoading(false);
+    }
+  };
+
+  if (jobId) {
+    fetchJobData();
+  }
+}, [jobId, navigate]);
+
+
 
   const handleChange = (e: any) => {
     const { name, value, files } = e.target;
@@ -27,25 +56,97 @@ const ApplyJob = () => {
     setLoading(true);
   };
 
-  useEffect(() => {
-    if (loading && countdown > 0) {
-      const timer = setTimeout(() => {
-        setCountdown((prev) => prev - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (loading && countdown === 0) {
-      navigate("/find-jobs");
+useEffect(() => {
+  if (loading && countdown > 0) {
+    const timer = setTimeout(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  } else if (loading && countdown === 0) {
+    navigate("/find-jobs");
+  }
+}, [loading, countdown, navigate]);
+
+  // Create a simple logo based on company name
+  const getCompanyLogo = (companyName: string) => {
+    if (!companyName || typeof companyName !== 'string') {
+      return (
+        <div className="w-16 h-16 bg-gray-500 rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
+          ?
+        </div>
+      );
     }
-  }, [loading, countdown, navigate]);
+
+    const initials = companyName
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+    
+    const colors = [
+      'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-red-500', 
+      'bg-indigo-500', 'bg-pink-500', 'bg-orange-500', 'bg-teal-500'
+    ];
+    const colorIndex = companyName.length % colors.length;
+    
+    return (
+      <div className={`w-16 h-16 ${colors[colorIndex]} rounded-2xl flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
+        {initials}
+      </div>
+    );
+  };
+
+  const getTimeSincePost = (postTime: string) => {
+    const posted = new Date(postTime);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - posted.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const formatSalary = (amount: number) => {
+    if (amount >= 100000) {
+      return `₹${(amount / 100000).toFixed(1)}L`;
+    }
+    return `₹${(amount / 1000).toFixed(0)}K`;
+  };
+
+  if (jobLoading) {
+    return (
+      <div className="bg-mine-shaft-950 text-white min-h-screen flex items-center justify-center">
+        <RingLoader color="#facc15" size={60} />
+      </div>
+    );
+  }
+
+  if (!jobData && !loading) {
+  return (
+    <div className="bg-mine-shaft-950 text-white min-h-screen flex items-center justify-center">
+      <div className="text-center space-y-4">
+        <h2 className="text-3xl font-bold text-bright-sun-400">Oops! Job Not Found</h2>
+        <p className="text-gray-400 text-sm">
+          The job you're trying to access may have been removed or does not exist.
+        </p>
+        <button
+          onClick={() => navigate('/find-jobs')}
+          className="bg-gradient-to-r from-bright-sun-400 to-yellow-500 text-black px-6 py-3 rounded-xl font-semibold hover:from-yellow-300 hover:to-yellow-400 transition-all duration-300"
+        >
+          ⬅️ Back to Job Listings
+        </button>
+      </div>
+    </div>
+  );
+}
+
 
   return (
     <div className="bg-mine-shaft-950 text-white min-h-screen">
-      {/* Container with max width and centering */}
       <div className="max-w-4xl mx-auto px-6 py-12">
         
         {/* Back Button */}
         <button
-          onClick={() => navigate("/jobs")}
+          onClick={() => navigate("/find-jobs")}
           className="flex items-center gap-3 text-sm font-medium text-bright-sun-400 bg-gradient-to-r from-mine-shaft-800 to-mine-shaft-700 px-6 py-3 rounded-xl hover:from-mine-shaft-700 hover:to-mine-shaft-600 transition-all duration-300 border border-mine-shaft-600 shadow-lg hover:shadow-bright-sun-400/20 mb-8 group"
         >
           <IconArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
@@ -55,29 +156,76 @@ const ApplyJob = () => {
         {/* Job Info Card */}
         <div className="bg-gradient-to-br from-mine-shaft-800 to-mine-shaft-900 p-8 rounded-2xl shadow-2xl mb-10 border border-mine-shaft-700">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-            <div className="w-16 h-16 bg-mine-shaft-700 rounded-2xl flex items-center justify-center p-2 shadow-lg">
-              <img
-                src="/google.png"
-                alt="Google"
-                className="w-full h-full object-contain"
-              />
-            </div>
+            {/* Dynamic Logo */}
+            {jobData.companyLogo && jobData.companyLogo.startsWith('http') ? (
+              <div className="w-16 h-16 bg-mine-shaft-700 rounded-2xl flex items-center justify-center p-2 shadow-lg">
+                <img
+                  src={jobData.companyLogo}
+                  alt={jobData.company}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    // If image fails to load, replace with generated logo
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.parentElement!.innerHTML = getCompanyLogo(jobData.company).props.children;
+                  }}
+                />
+              </div>
+            ) : (
+              getCompanyLogo(jobData.company)
+            )}
+            
             <div className="flex-1">
               <h1 className="text-3xl font-bold text-bright-sun-400 mb-2">
-                Senior Frontend Developer
+                {jobData.jobTitle}
               </h1>
-              <p className="text-lg text-gray-300 font-medium">Google</p>
-              <p className="text-sm text-gray-400 mt-1 bg-mine-shaft-700/50 px-3 py-1 rounded-full inline-block">
-                Posted 5 days ago
-              </p>
+              <p className="text-lg text-gray-300 font-medium">{jobData.company}</p>
+              <div className="flex flex-wrap gap-3 mt-3">
+                <p className="text-sm text-gray-400 bg-mine-shaft-700/50 px-3 py-1 rounded-full">
+                  Posted {getTimeSincePost(jobData.postTime)} days ago
+                </p>
+                <p className="text-sm text-bright-sun-400 bg-bright-sun-400/10 px-3 py-1 rounded-full font-medium">
+                  {formatSalary(jobData.packageOffered)}
+                </p>
+                <p className="text-sm text-gray-400 bg-mine-shaft-700/50 px-3 py-1 rounded-full">
+                  {jobData.location}
+                </p>
+                <p className="text-sm text-gray-400 bg-mine-shaft-700/50 px-3 py-1 rounded-full">
+                  {jobData.jobType}
+                </p>
+              </div>
+              
+              {/* Skills */}
+              {jobData.skillsRequired && jobData.skillsRequired.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {jobData.skillsRequired.slice(0, 5).map((skill, index) => (
+                    <span key={index} className="bg-bright-sun-400/10 text-bright-sun-400 px-2 py-1 rounded-full text-xs border border-bright-sun-400/20">
+                      {skill}
+                    </span>
+                  ))}
+                  {jobData.skillsRequired.length > 5 && (
+                    <span className="text-gray-400 text-xs px-2 py-1">
+                      +{jobData.skillsRequired.length - 5} more
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
+          
+          {/* Job Description */}
+          {jobData.description && (
+            <div className="mt-6 pt-6 border-t border-mine-shaft-700">
+              <h3 className="text-lg font-semibold text-bright-sun-400 mb-3">About this role</h3>
+              <p className="text-gray-300 text-sm leading-relaxed">{jobData.description}</p>
+            </div>
+          )}
         </div>
 
         {/* Divider */}
         <div className="border-t border-mine-shaft-700 mb-10 opacity-50" />
 
-        {/* Application Form */}
+        {/* Application Form - Same as before */}
         <div className="bg-gradient-to-br from-mine-shaft-900 to-mine-shaft-950 p-8 rounded-2xl shadow-2xl border border-mine-shaft-700">
           <h2 className="text-2xl font-bold text-bright-sun-400 mb-8 flex items-center gap-3">
             Submit Your Application
@@ -176,7 +324,7 @@ const ApplyJob = () => {
                     rows={8}
                     value={form.coverLetter}
                     onChange={handleChange}
-                    placeholder="Share your passion, relevant experience, and what makes you the ideal candidate for this position..."
+                    placeholder={`Share your passion for ${jobData.jobTitle}, relevant experience, and what makes you the ideal candidate for this position at ${jobData.company}...`}
                     className="bg-mine-shaft-800 px-4 py-3 rounded-xl text-sm text-white placeholder-gray-500 border border-mine-shaft-600 resize-none focus:outline-none focus:ring-2 focus:ring-bright-sun-400 focus:border-bright-sun-400 transition-all duration-200"
                   />
                   <p className="text-xs text-gray-500 mt-1">
