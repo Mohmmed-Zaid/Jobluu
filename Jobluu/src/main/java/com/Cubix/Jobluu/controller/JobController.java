@@ -11,7 +11,12 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @CrossOrigin
@@ -22,26 +27,32 @@ public class JobController {
     @Autowired
     private JobService jobService;
 
+    private final String UPLOAD_DIR = "uploads/logos/";
+
     @PostMapping("/post")
-    public ResponseEntity<JobDTO> postDTO(@RequestBody @Valid JobDTO jobDTO) throws JobluuException{
+    public ResponseEntity<JobDTO> postJob(@RequestBody @Valid JobDTO jobDTO) throws JobluuException {
         return new ResponseEntity<>(jobService.postJob(jobDTO), HttpStatus.CREATED);
     }
+
     @GetMapping("/getAll")
     public ResponseEntity<List<JobDTO>> getAllJobs() {
         List<JobDTO> jobs = jobService.getAllJobs();
         return ResponseEntity.ok(jobs);
     }
+
     @GetMapping("/{id}")
     public ResponseEntity<JobDTO> getJobById(@PathVariable Long id) throws JobluuException {
         JobDTO job = jobService.getJobById(id);
         return ResponseEntity.ok(job);
     }
+
     @PutMapping("/update/{id}")
     public ResponseEntity<JobDTO> updateJob(
             @PathVariable Long id,
             @RequestBody @Valid JobDTO jobDTO) throws JobluuException {
         return ResponseEntity.ok(jobService.updateJob(id, jobDTO));
     }
+
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteJob(@PathVariable Long id) {
         try {
@@ -51,17 +62,18 @@ public class JobController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Job not found with ID: " + id);
         }
     }
-    // Add to JobController.java
 
     @PostMapping("/create-with-logo")
     public ResponseEntity<JobDTO> postJobWithLogo(
             @RequestPart("job") @Valid JobDTO jobDTO,
             @RequestPart(value = "logo", required = false) MultipartFile logoFile) throws JobluuException {
-        // Handle logo upload logic here
         if (logoFile != null && !logoFile.isEmpty()) {
-            // Save logo and set URL in jobDTO
-            String logoUrl = saveLogoFile(logoFile);
-            jobDTO.setCompanyLogo(logoUrl);
+            try {
+                String logoUrl = saveLogoFile(logoFile);
+                jobDTO.setCompanyLogo(logoUrl);
+            } catch (IOException e) {
+                throw new JobluuException("Failed to save logo file: " + e.getMessage());
+            }
         }
         return new ResponseEntity<>(jobService.postJob(jobDTO), HttpStatus.CREATED);
     }
@@ -72,30 +84,46 @@ public class JobController {
             @RequestPart("job") @Valid JobDTO jobDTO,
             @RequestPart(value = "logo", required = false) MultipartFile logoFile) throws JobluuException {
         if (logoFile != null && !logoFile.isEmpty()) {
-            String logoUrl = saveLogoFile(logoFile);
-            jobDTO.setCompanyLogo(logoUrl);
+            try {
+                String logoUrl = saveLogoFile(logoFile);
+                jobDTO.setCompanyLogo(logoUrl);
+            } catch (IOException e) {
+                throw new JobluuException("Failed to save logo file: " + e.getMessage());
+            }
         }
         return ResponseEntity.ok(jobService.updateJob(id, jobDTO));
     }
 
     @GetMapping("/status/{status}")
     public ResponseEntity<List<JobDTO>> getJobsByStatus(@PathVariable String status) {
-        // You'll need to implement this in service
         List<JobDTO> jobs = jobService.getJobsByStatus(status);
         return ResponseEntity.ok(jobs);
     }
 
     @GetMapping("/search")
     public ResponseEntity<List<JobDTO>> searchJobs(@RequestParam("q") String query) {
-        // You'll need to implement this in service
         List<JobDTO> jobs = jobService.searchJobs(query);
         return ResponseEntity.ok(jobs);
     }
 
     // Helper method for saving logo files
-    private String saveLogoFile(MultipartFile file) {
-        // Implement your file saving logic here
-        // Return the URL/path where the file is saved
-        return "/uploads/logos/" + file.getOriginalFilename();
+    private String saveLogoFile(MultipartFile file) throws IOException {
+        // Create upload directory if it doesn't exist
+        Path uploadPath = Paths.get(UPLOAD_DIR);
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        // Generate unique filename
+        String originalFilename = file.getOriginalFilename();
+        String fileExtension = originalFilename != null ?
+                originalFilename.substring(originalFilename.lastIndexOf(".")) : "";
+        String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
+
+        // Save file
+        Path filePath = uploadPath.resolve(uniqueFilename);
+        Files.copy(file.getInputStream(), filePath);
+
+        return "/uploads/logos/" + uniqueFilename;
     }
 }

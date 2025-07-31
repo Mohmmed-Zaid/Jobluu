@@ -5,7 +5,6 @@ import com.Cubix.Jobluu.dto.ResponseDto;
 import com.Cubix.Jobluu.dto.UserDto;
 import com.Cubix.Jobluu.exception.JobluuException;
 import com.Cubix.Jobluu.service.UserService;
-import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;

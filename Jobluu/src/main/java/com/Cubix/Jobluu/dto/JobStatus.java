@@ -1,5 +1,10 @@
 package com.Cubix.Jobluu.dto;
 
 public enum JobStatus {
-    OPEN, CLOSE, DRAFT
+    ACTIVE,
+    INACTIVE,
+    CLOSED,
+    DRAFT,
+    EXPIRED,
+    OPEN
 }

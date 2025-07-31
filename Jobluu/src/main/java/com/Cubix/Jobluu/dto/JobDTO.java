@@ -1,6 +1,9 @@
 package com.Cubix.Jobluu.dto;
 
 import com.Cubix.Jobluu.entities.Job;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -12,18 +15,35 @@ import java.util.List;
 public class JobDTO {
 
     private Long id;
+
+    @NotBlank(message = "Job title is required")
     private String jobTitle;
+
+    @NotBlank(message = "Company name is required")
     private String company;
+
     private String companyLogo;
-    private List<Applicant> applicant;
+    private List<Applicant> applicants; // Fixed field name
     private String about;
-    private String exprience;
+    private String experience; // Fixed spelling
+
+    @NotBlank(message = "Job type is required")
     private String jobType;
+
+    @NotBlank(message = "Location is required")
     private String location;
+
+    @Positive(message = "Package offered must be positive")
     private Long packageOffered;
+
     private LocalDateTime postTime;
+
+    @NotBlank(message = "Description is required")
     private String description;
+
+    @NotNull(message = "Skills required cannot be null")
     private List<String> skillsRequired;
+
     private JobStatus jobStatus;
 
     public Job toEntity() {
@@ -32,9 +52,9 @@ public class JobDTO {
                 this.jobTitle,
                 this.company,
                 this.companyLogo,
-                this.applicant,
+                this.applicants,
                 this.about,
-                this.exprience,
+                this.experience,
                 this.jobType,
                 this.location,
                 this.packageOffered,

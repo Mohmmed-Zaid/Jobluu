@@ -1,6 +1,7 @@
 package com.Cubix.Jobluu.service;
 
 import com.Cubix.Jobluu.dto.JobDTO;
+import com.Cubix.Jobluu.dto.JobStatus;
 import com.Cubix.Jobluu.entities.Job;
 import com.Cubix.Jobluu.exception.JobluuException;
 import com.Cubix.Jobluu.repositories.JobRepository;
@@ -14,16 +15,18 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class JobServiceImpl implements JobService{
+public class JobServiceImpl implements JobService {
 
     @Autowired
     private JobRepository jobRepository;
-
 
     @Override
     public JobDTO postJob(JobDTO jobDTO) throws JobluuException {
         jobDTO.setId(Utilities.getNextSequence("jobs"));
         jobDTO.setPostTime(LocalDateTime.now());
+        if (jobDTO.getJobStatus() == null) {
+            jobDTO.setJobStatus(JobStatus.ACTIVE); // Set default status
+        }
         return jobRepository.save(jobDTO.toEntity()).toDTO();
     }
 
@@ -49,18 +52,21 @@ public class JobServiceImpl implements JobService{
             throw new JobluuException("Job not found with id: " + id);
         }
 
-        Job existingJob = (existingJobOptional).get();
+        Job existingJob = existingJobOptional.get();
 
+        // Update fields
         existingJob.setJobTitle(updatedJob.getJobTitle());
         existingJob.setDescription(updatedJob.getDescription());
         existingJob.setCompany(updatedJob.getCompany());
         existingJob.setCompanyLogo(updatedJob.getCompanyLogo());
-        existingJob.setExprience(updatedJob.getExprience());
+        existingJob.setExperience(updatedJob.getExperience()); // Fixed field name
         existingJob.setLocation(updatedJob.getLocation());
         existingJob.setPackageOffered(updatedJob.getPackageOffered());
         existingJob.setJobType(updatedJob.getJobType());
         existingJob.setSkillsRequired(updatedJob.getSkillsRequired());
-        existingJob.setPostTime(LocalDateTime.now());
+        existingJob.setAbout(updatedJob.getAbout());
+        existingJob.setJobStatus(updatedJob.getJobStatus());
+        // Don't update postTime for updates - keep original
 
         return jobRepository.save(existingJob).toDTO();
     }
@@ -75,16 +81,19 @@ public class JobServiceImpl implements JobService{
 
     @Override
     public List<JobDTO> getJobsByStatus(String status) {
-        // You'll need to add this method to your repository
-        return jobRepository.findByStatus(status)
-                .stream()
-                .map(Job::toDTO)
-                .collect(Collectors.toList());
+        try {
+            JobStatus jobStatus = JobStatus.valueOf(status.toUpperCase());
+            return jobRepository.findByJobStatus(jobStatus)
+                    .stream()
+                    .map(Job::toDTO)
+                    .collect(Collectors.toList());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid job status: " + status);
+        }
     }
 
     @Override
     public List<JobDTO> searchJobs(String query) {
-        // You'll need to add this method to your repository
         return jobRepository.findByJobTitleContainingIgnoreCaseOrCompanyContainingIgnoreCase(query, query)
                 .stream()
                 .map(Job::toDTO)
