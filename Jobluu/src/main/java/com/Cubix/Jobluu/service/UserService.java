@@ -8,7 +8,9 @@ import jakarta.validation.Valid;
 
 public interface UserService {
 
-    UserDto registerUser(UserDto userDto) throws JobluuException;
+    public UserDto registerUser(UserDto userDto) throws JobluuException;
+
+    public UserDto getUserByEmail(String email) throws JobluuException;
 
     UserDto loginUser(LoginDto loginDto) throws JobluuException;
 

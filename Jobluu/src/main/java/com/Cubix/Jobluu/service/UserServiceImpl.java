@@ -62,6 +62,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserDto getUserByEmail(String email) throws JobluuException {
+      return userRepository.findByEmail(email).orElseThrow(()-> new JobluuException("USER_NOT_FOUND")).toDto();
+    }
+
+    @Override
     public UserDto loginUser(LoginDto loginDto) throws JobluuException {
         User user = userRepository.findByEmail(loginDto.getEmail())
                 .orElseThrow(() -> new JobluuException("USER_NOT_FOUND"));
