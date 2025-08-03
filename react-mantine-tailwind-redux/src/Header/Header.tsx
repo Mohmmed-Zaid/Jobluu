@@ -1,11 +1,13 @@
+// src/components/Header.tsx
 import React from "react";
-import { IconBell, IconSettings } from "@tabler/icons-react";
-import { Avatar, Indicator } from "@mantine/core";
+import { IconSettings } from "@tabler/icons-react";
+import { Avatar } from "@mantine/core";
 import owlLogo from "../assets/owl.png";
 import NavLinks from "./NavLinks";
 import ProfileMenu from "./ProfileMenu";
+import NotificationBell from "../notifications/NotificationBell";
 
-const Header = () => {
+const Header: React.FC = () => {
   return (
     <div className="w-full h-20 bg-mine-shaft-950 text-white flex justify-between items-center px-6 font-poppins">
       {/* Logo + Brand */}
@@ -20,20 +22,13 @@ const Header = () => {
       {/* Icons + User */}
       <div className="flex gap-5 items-center font-roboto">
         <ProfileMenu/>
-        <div className="bg-mine-shaft-900 p-1.5 rounded-full">
-          <IconSettings stroke={1.5} />
+        
+        <div className="bg-mine-shaft-900 p-1.5 rounded-full hover:bg-mine-shaft-800 transition-colors">
+          <IconSettings stroke={1.5} className="cursor-pointer" />
         </div>
-        <div className="bg-mine-shaft-900 p-1.5 rounded-full">
-          <Indicator
-            offset={6}
-            size={9}
-            processing
-            withBorder
-            styles={{ indicator: { backgroundColor: "#ffbd20" } }}
-          >
-            <IconBell stroke={1.5} />
-          </Indicator>
-        </div>
+        
+        {/* Enhanced Notification Bell */}
+        <NotificationBell />
       </div>
     </div>
   );

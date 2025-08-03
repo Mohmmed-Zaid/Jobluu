@@ -25,6 +25,7 @@ import ProfilePage from './Pages/ProfilePage';
 // Components
 import ProtectedRoute from './Components/ProtectedRoute';
 import WildCard from './Pages/WildCard';
+import NotificationPanel from './notifications/NotificationPanel';
 
 function App() {
   const theme = createTheme({
@@ -80,7 +81,7 @@ function App() {
                 } 
               />
               
-            
+             <Route path="/notifications" element={<NotificationPanel />} />
               
               <Route 
                 path="/talent-profile/:id" 
