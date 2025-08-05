@@ -20,5 +20,8 @@ public interface UserService {
 
     ResponseDto changePassword(@Valid LoginDto loginDto) throws JobluuException;
 
+    UserDto createGoogleUser(UserDto user) throws JobluuException;
+
+    UserDto updateUser(UserDto user) throws JobluuException;
 
 }

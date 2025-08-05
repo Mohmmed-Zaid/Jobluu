@@ -21,12 +21,15 @@ public class User {
     private String email;
     private String password;
     private byte[] profileLogo;
+    private String googleId;
+    private String profilePicture;
+
 
     private AccountType accountType;
     private String profileId;
 
     public UserDto toDto(){
-        return new UserDto(this.id,this.name,this.email,this.password,this.accountType,this.profileId);
+        return new UserDto(this.id,this.name,this.email,this.password,this.accountType,this.profileId,this.googleId,this.profilePicture);
 
     }
 

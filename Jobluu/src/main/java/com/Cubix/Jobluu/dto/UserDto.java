@@ -34,6 +34,11 @@ public class UserDto {
 
     private String profileId;
 
+    private String googleId;
+
+    private String profilePicture;
+
+
     public User toEntity() {
         User user = new User();
         user.setId(this.id);

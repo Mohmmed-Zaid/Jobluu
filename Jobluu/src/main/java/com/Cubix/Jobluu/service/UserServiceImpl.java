@@ -1,9 +1,7 @@
 package com.Cubix.Jobluu.service;
 
-import com.Cubix.Jobluu.dto.LoginDto;
-import com.Cubix.Jobluu.dto.NotificationDTO;
-import com.Cubix.Jobluu.dto.ResponseDto;
-import com.Cubix.Jobluu.dto.UserDto;
+import com.Cubix.Jobluu.controller.GoogleAuthController;
+import com.Cubix.Jobluu.dto.*;
 import com.Cubix.Jobluu.entities.OTP;
 import com.Cubix.Jobluu.entities.User;
 import com.Cubix.Jobluu.exception.JobluuException;
@@ -12,16 +10,26 @@ import com.Cubix.Jobluu.repositories.OTPRepository;
 import com.Cubix.Jobluu.repositories.UserRepository;
 import com.Cubix.Jobluu.utility.Data;
 import com.Cubix.Jobluu.utility.Utilities;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -44,6 +52,10 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Value("${google.client-id}")
+    private String googleClientId;
+
 
     @Override
     public UserDto registerUser(UserDto userDto) throws JobluuException {
@@ -146,4 +158,39 @@ public class UserServiceImpl implements UserService {
             System.out.println("Removed " + expiredOTP.size() + " expired OTP(s).");
         }
     }
+
+    @Override
+    public UserDto createGoogleUser(UserDto userDto) throws JobluuException {
+        // Email unique check
+        if (userRepository.findByEmail(userDto.getEmail()).isPresent()) {
+            throw new JobluuException("USER_FOUND");
+        }
+
+        // Create profile id
+        userDto.setProfileId(profileService.createProfile(userDto.getEmail()).toString());
+        userDto.setId(Utilities.getNextSequence("users"));
+
+        // No password for Google users
+        userDto.setPassword(""); // ensure empty; do not encode
+
+        User saved = userRepository.save(userDto.toEntity());
+        return saved.toDto();
+    }
+
+    @Override
+    public UserDto updateUser(UserDto userDto) throws JobluuException {
+        User existing = userRepository.findByEmail(userDto.getEmail())
+                .orElseThrow(() -> new JobluuException("USER_NOT_FOUND"));
+
+        // Update only selected fields
+        if (userDto.getName() != null) existing.setName(userDto.getName());
+        if (userDto.getGoogleId() != null) existing.setGoogleId(userDto.getGoogleId());
+        if (userDto.getProfilePicture() != null) existing.setProfilePicture(userDto.getProfilePicture());
+        if (userDto.getAccountType() != null) existing.setAccountType(userDto.getAccountType());
+        // DO NOT overwrite password here
+
+        User updated = userRepository.save(existing);
+        return updated.toDto();
+    }
 }
+
