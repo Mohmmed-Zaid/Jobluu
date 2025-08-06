@@ -1,48 +1,81 @@
-// Store/userSlice.ts
+// Store/authSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface UserState {
-  profile: any | null; // Replace with your user type
-  isProfileLoaded: boolean;
+interface AuthState {
+  isAuthenticated: boolean;
+  token: string | null;
+  refreshToken: string | null;
+  error: string | null;
+  isLoading: boolean;
 }
 
-const initialState: UserState = {
-  profile: null,
-  isProfileLoaded: false,
+const initialState: AuthState = {
+  isAuthenticated: false,
+  token: null,
+  refreshToken: null,
+  error: null,
+  isLoading: false,
 };
 
-const userSlice = createSlice({
-  name: 'user',
+const authSlice = createSlice({
+  name: 'auth',
   initialState,
   reducers: {
-    setUser: (state, action: PayloadAction<any>) => {
-      console.log('🔄 User Slice - setUser called with:', action.payload);
-      state.profile = action.payload;
-      state.isProfileLoaded = true;
-      console.log('✅ User Slice - Profile set successfully');
+    loginStart: (state) => {
+      console.log('🔄 Auth Slice - loginStart called');
+      state.isLoading = true;
+      state.error = null;
+      console.log('✅ Auth Slice - Login started');
     },
-    removeUser: (state) => {
-      console.log('🔄 User Slice - removeUser called');
-      state.profile = null;
-      state.isProfileLoaded = false;
-      console.log('✅ User Slice - Profile removed');
+    loginSuccess: (state, action: PayloadAction<{ token: string | null; refreshToken?: string | null }>) => {
+      console.log('🔄 Auth Slice - loginSuccess called with:', action.payload);
+      state.isAuthenticated = !!action.payload.token;
+      state.token = action.payload.token;
+      state.refreshToken = action.payload.refreshToken || null;
+      state.isLoading = false;
+      state.error = null;
+      console.log('✅ Auth Slice - Login successful');
     },
-    setProfileLoaded: (state, action: PayloadAction<boolean>) => {
-      state.isProfileLoaded = action.payload;
+    loginFailure: (state, action: PayloadAction<string>) => {
+      console.log('🔄 Auth Slice - loginFailure called with:', action.payload);
+      state.isAuthenticated = false;
+      state.token = null;
+      state.refreshToken = null;
+      state.isLoading = false;
+      state.error = action.payload;
+      console.log('❌ Auth Slice - Login failed');
     },
-    updateProfile: (state, action: PayloadAction<Partial<any>>) => {
-      if (state.profile) {
-        state.profile = { ...state.profile, ...action.payload };
-      }
+    logout: (state) => {
+      console.log('🔄 Auth Slice - logout called');
+      state.isAuthenticated = false;
+      state.token = null;
+      state.refreshToken = null;
+      state.error = null;
+      state.isLoading = false;
+      console.log('✅ Auth Slice - Logged out');
+    },
+    clearError: (state) => {
+      console.log('🔄 Auth Slice - clearError called');
+      state.error = null;
+      console.log('✅ Auth Slice - Error cleared');
+    },
+    setTokens: (state, action: PayloadAction<{ token: string; refreshToken?: string }>) => {
+      console.log('🔄 Auth Slice - setTokens called');
+      state.token = action.payload.token;
+      state.refreshToken = action.payload.refreshToken || null;
+      state.isAuthenticated = true;
+      console.log('✅ Auth Slice - Tokens set');
     },
   },
 });
 
 export const {
-  setUser,
-  removeUser,
-  setProfileLoaded,
-  updateProfile,
-} = userSlice.actions;
+  loginStart,
+  loginSuccess,
+  loginFailure,
+  logout,
+  clearError,
+  setTokens,
+} = authSlice.actions;
 
-export default userSlice.reducer;
+export default authSlice.reducer;

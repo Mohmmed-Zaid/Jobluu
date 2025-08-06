@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
-import { registerUser } from "../Services/UserService";
+import { useAppDispatch } from "../Store/hooks";
+import AuthService from "../Services/AuthService";
 import { signupValidation } from "../Services/FormValidation";
 
 interface SignupProps {
@@ -31,7 +32,45 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"error" | "success" | "info" | "">("");
   const [isLoading, setIsLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [showAccountTypeModal, setShowAccountTypeModal] = useState(false);
+  const [googleCredential, setGoogleCredential] = useState("");
+  const [googleInitialized, setGoogleInitialized] = useState(false);
+  const [initializationRetries, setInitializationRetries] = useState(0);
+
+  const dispatch = useAppDispatch();
+
+  // Initialize Google Sign-In with retry mechanism
+  useEffect(() => {
+    const initGoogle = async () => {
+      try {
+        setGoogleLoading(true);
+        await AuthService.initializeGoogleAuth();
+        setGoogleInitialized(true);
+        setInitializationRetries(0);
+        console.log('Google Sign-In initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize Google Auth:', error);
+        setGoogleInitialized(false);
+        
+        // Retry initialization up to 3 times
+        if (initializationRetries < 3) {
+          console.log(`Retrying Google Auth initialization... (${initializationRetries + 1}/3)`);
+          setInitializationRetries(prev => prev + 1);
+          setTimeout(() => {
+            initGoogle();
+          }, 2000);
+        } else {
+          showMessage("Google Sign-In is currently unavailable. Please use email registration.", "info");
+        }
+      } finally {
+        setGoogleLoading(false);
+      }
+    };
+
+    initGoogle();
+  }, [initializationRetries]);
 
   // Toggle password visibility
   const togglePassword = () => setShowPassword((prev) => !prev);
@@ -54,9 +93,13 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
 
     // Validate on change for text inputs
     if (type !== "checkbox" && typeof newValue === "string") {
-      const validationError = signupValidation(name, newValue);
-      if (validationError) {
-        setErrors((prev) => ({ ...prev, [name]: validationError }));
+      try {
+        const validationError = signupValidation(name, newValue);
+        if (validationError) {
+          setErrors((prev) => ({ ...prev, [name]: validationError }));
+        }
+      } catch (error) {
+        console.warn('Validation function not available:', error);
       }
     }
   };
@@ -73,17 +116,47 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
     setTimeout(() => {
       setMessage("");
       setMessageType("");
-    }, 3000);
+    }, 6000); // Increased timeout for better UX
   };
 
   // Validate all fields
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
     
-    // Validate each field
-    newErrors.name = signupValidation("name", formData.name);
-    newErrors.email = signupValidation("email", formData.email);
-    newErrors.password = signupValidation("password", formData.password);
+    try {
+      if (typeof signupValidation === 'function') {
+        // Validate each field
+        const nameError = signupValidation("name", formData.name);
+        const emailError = signupValidation("email", formData.email);
+        const passwordError = signupValidation("password", formData.password);
+        
+        if (nameError) newErrors.name = nameError;
+        if (emailError) newErrors.email = emailError;
+        if (passwordError) newErrors.password = passwordError;
+      } else {
+        // Basic validation if signupValidation is not available
+        if (!formData.name.trim()) newErrors.name = "Name is required";
+        if (!formData.email.trim()) newErrors.email = "Email is required";
+        if (!formData.password.trim()) newErrors.password = "Password is required";
+        
+        // Basic email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (formData.email && !emailRegex.test(formData.email)) {
+          newErrors.email = "Please enter a valid email address";
+        }
+        
+        // Basic password strength validation
+        if (formData.password && formData.password.length < 6) {
+          newErrors.password = "Password must be at least 6 characters long";
+        }
+      }
+    } catch (error) {
+      console.warn('Validation error:', error);
+      // Fallback validation
+      if (!formData.name.trim()) newErrors.name = "Name is required";
+      if (!formData.email.trim()) newErrors.email = "Email is required";
+      if (!formData.password.trim()) newErrors.password = "Password is required";
+    }
     
     // Password confirmation check
     if (formData.password !== formData.confirmPassword) {
@@ -95,13 +168,8 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
       newErrors.terms = "Please accept the terms and conditions!";
     }
 
-    // Filter out empty errors
-    const filteredErrors = Object.fromEntries(
-      Object.entries(newErrors).filter(([_, value]) => value !== "")
-    );
-
-    setErrors(filteredErrors);
-    return Object.keys(filteredErrors).length === 0;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   // Handle form submission
@@ -118,21 +186,21 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
     showMessage("Creating your account...", "info");
 
     try {
-      // Prepare data for Spring Boot backend (matching UserDto structure)
+      // Prepare data for Spring Boot backend
       const signupData = {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        confirmpassword: formData.confirmPassword, // Keep lowercase as in your original code
+        confirmpassword: formData.confirmPassword,
         accountType: formData.accountType
       };
 
-      console.log('Submitting signup data:', signupData); // Debug log
+      console.log('Submitting signup data:', signupData);
 
-      // Use the registerUser service
-      const result = await registerUser(signupData);
+      // Use the AuthService register method
+      await AuthService.register(signupData, dispatch);
       
-      showMessage("Account created successfully!", "success");
+      showMessage("Account created successfully! You can now login.", "success");
       
       // Clear form data
       setFormData({
@@ -152,11 +220,120 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
 
     } catch (error: any) {
       console.error('Signup error:', error);
-      const errorMessage = error?.message || "Signup failed. Please try again.";
+      const errorMessage = error?.message || "Registration failed. Please try again.";
       showMessage(errorMessage, "error");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Handle Google Sign-Up button click with better error handling
+  const handleGoogleSignUp = async () => {
+    if (!googleInitialized) {
+      if (initializationRetries >= 3) {
+        showMessage("Google Sign-In is currently unavailable. Please try email registration instead.", "error");
+      } else {
+        showMessage("Google Sign-In is still loading. Please wait a moment and try again.", "info");
+      }
+      return;
+    }
+
+    if (!AuthService.isGoogleInitialized()) {
+      showMessage("Google Sign-In is not properly initialized. Please refresh the page and try again.", "error");
+      return;
+    }
+
+    setGoogleLoading(true);
+    showMessage("Opening Google Sign-In...", "info");
+    
+    try {
+      console.log('Initiating Google Sign-Up...');
+      
+      // Set up timeout for the Google Sign-In process
+      const timeoutId = setTimeout(() => {
+        setGoogleLoading(false);
+        showMessage("Google Sign-In took too long. Please try again.", "error");
+      }, 30000); // 30 second timeout
+      
+      AuthService.promptGoogleSignIn((response: any) => {
+        clearTimeout(timeoutId);
+        console.log('Google Sign-In response:', response);
+        
+        if (response.error) {
+          console.error('Google Sign-In error:', response.error);
+          let errorMessage = "Google Sign-Up failed.";
+          
+          if (response.error === 'popup_closed_by_user') {
+            errorMessage = "Google Sign-Up was cancelled.";
+          } else if (response.error === 'access_denied') {
+            errorMessage = "Access denied by Google.";
+          } else if (response.error === 'popup_blocked') {
+            errorMessage = "Pop-up was blocked. Please allow pop-ups and try again.";
+          } else if (response.error.includes('network') || response.error.includes('failed')) {
+            errorMessage = "Network error occurred. Please check your connection and try again.";
+          }
+          
+          showMessage(errorMessage, "error");
+          setGoogleLoading(false);
+          return;
+        }
+
+        if (response.credential) {
+          console.log('Google credential received successfully');
+          setGoogleCredential(response.credential);
+          setShowAccountTypeModal(true);
+          // Keep loading state as we're moving to account type selection
+        } else {
+          console.error('No credential in Google response');
+          showMessage("Google Sign-Up failed. No credential received.", "error");
+          setGoogleLoading(false);
+        }
+      });
+    } catch (error: any) {
+      console.error('Google Sign-Up error:', error);
+      showMessage("Google Sign-Up failed. Please try again or use email registration.", "error");
+      setGoogleLoading(false);
+    }
+  };
+
+  // Handle account type selection for Google signup
+  const handleGoogleSignup = async (accountType: 'APPLICANT' | 'EMPLOYER') => {
+    setShowAccountTypeModal(false);
+    setGoogleLoading(true);
+    showMessage("Creating account with Google...", "info");
+
+    try {
+      await AuthService.loginWithGoogle(googleCredential, accountType, dispatch);
+      showMessage("Account created successfully! Redirecting...", "success");
+      
+      setTimeout(() => {
+        onSwitchToLogin();
+      }, 1000);
+
+    } catch (error: any) {
+      console.error('❌ Google signup error:', error);
+      let errorMessage = "Google Sign-Up failed. Please try again.";
+      
+      if (error.message.includes('CORS')) {
+        errorMessage = "Server configuration issue. Please try again later or use email registration.";
+      } else if (error.message.includes('Network')) {
+        errorMessage = "Network error. Please check your connection and try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      showMessage(errorMessage, "error");
+    } finally {
+      setGoogleLoading(false);
+      setGoogleCredential("");
+    }
+  };
+
+  // Handle modal close
+  const handleModalClose = () => {
+    setShowAccountTypeModal(false);
+    setGoogleCredential("");
+    setGoogleLoading(false);
   };
 
   return (
@@ -178,22 +355,62 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
       {/* Message Notification */}
       {message && (
         <div
-          className={`px-4 py-2 rounded-lg text-sm font-medium animate-fade-in-down ${
+          className={`px-4 py-3 rounded-lg text-sm font-medium animate-fade-in-down ${
             messageType === "error" 
-              ? "bg-red-600" 
+              ? "bg-red-600/90 text-white border border-red-500" 
               : messageType === "success" 
-              ? "bg-green-600" 
+              ? "bg-green-600/90 text-white border border-green-500" 
               : messageType === "info"
-              ? "bg-blue-600"
-              : "bg-gray-600"
-          } shadow-md`}
+              ? "bg-blue-600/90 text-white border border-blue-500"
+              : "bg-gray-600/90 text-white border border-gray-500"
+          } shadow-md backdrop-blur-sm`}
         >
           {message}
         </div>
       )}
 
+      {/* Google Sign-Up Button */}
+      <button
+        type="button"
+        onClick={handleGoogleSignUp}
+        disabled={isLoading || googleLoading}
+        className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {googleLoading ? (
+          <div className="flex items-center">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600 mr-2"></div>
+            {showAccountTypeModal ? "Creating account..." : "Connecting to Google..."}
+          </div>
+        ) : !googleInitialized ? (
+          <div className="flex items-center">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600 mr-2"></div>
+            Loading Google Sign-In... ({initializationRetries > 0 ? `Retry ${initializationRetries}/3` : 'Initializing'})
+          </div>
+        ) : (
+          <>
+            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            Sign up with Google
+          </>
+        )}
+      </button>
+
+      {/* Divider */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-600"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-mine-shaft-950 text-gray-400">Or create account with email</span>
+        </div>
+      </div>
+
       <div className="space-y-6 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
-        {/* Account Type Selection - Moved to top for better UX */}
+        {/* Account Type Selection */}
         <div>
           <label className="text-sm text-gray-300 mb-2 block font-medium">
             Account Type <span className="text-red-500">*</span>
@@ -202,18 +419,20 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
             <button
               type="button"
               onClick={() => handleAccountTypeChange("APPLICANT")}
-              className={`flex-1 py-3 px-4 border rounded-lg transition-all duration-300 ${
+              disabled={isLoading || googleLoading}
+              className={`flex-1 py-3 px-4 border rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
                 formData.accountType === "APPLICANT"
                   ? "border-yellow-400 bg-yellow-400/10 text-yellow-400"
                   : "border-mine-shaft-800 text-gray-300 hover:bg-mine-shaft-900"
               }`}
             >
-              Applicant
+              Job Seeker
             </button>
             <button
               type="button"
               onClick={() => handleAccountTypeChange("EMPLOYER")}
-              className={`flex-1 py-3 px-4 border rounded-lg transition-all duration-300 ${
+              disabled={isLoading || googleLoading}
+              className={`flex-1 py-3 px-4 border rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
                 formData.accountType === "EMPLOYER"
                   ? "border-yellow-400 bg-yellow-400/10 text-yellow-400"
                   : "border-mine-shaft-800 text-gray-300 hover:bg-mine-shaft-900"
@@ -236,8 +455,9 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
             value={formData.name}
             onChange={handleChange}
             required
+            disabled={isLoading || googleLoading}
             placeholder="Your full name"
-            className={`w-full px-4 py-3 bg-transparent border rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-300 ${
+            className={`w-full px-4 py-3 bg-transparent border rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
               errors.name ? "border-red-500" : "border-mine-shaft-850"
             }`}
           />
@@ -256,8 +476,9 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
             value={formData.email}
             onChange={handleChange}
             required
+            disabled={isLoading || googleLoading}
             placeholder="you@example.com"
-            className={`w-full px-4 py-3 bg-transparent border rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-300 ${
+            className={`w-full px-4 py-3 bg-transparent border rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
               errors.email ? "border-red-500" : "border-mine-shaft-850"
             }`}
           />
@@ -277,15 +498,17 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
               value={formData.password}
               onChange={handleChange}
               required
+              disabled={isLoading || googleLoading}
               placeholder="••••••••"
-              className={`w-full px-4 py-3 bg-transparent border rounded-md text-white placeholder-gray-500 pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-300 ${
+              className={`w-full px-4 py-3 bg-transparent border rounded-md text-white placeholder-gray-500 pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
                 errors.password ? "border-red-500" : "border-mine-shaft-850"
               }`}
             />
             <button
               type="button"
               onClick={togglePassword}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400 transition-colors"
+              disabled={isLoading || googleLoading}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
@@ -306,15 +529,17 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
               value={formData.confirmPassword}
               onChange={handleChange}
               required
+              disabled={isLoading || googleLoading}
               placeholder="••••••••"
-              className={`w-full px-4 py-3 bg-transparent border rounded-md text-white placeholder-gray-500 pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-300 ${
+              className={`w-full px-4 py-3 bg-transparent border rounded-md text-white placeholder-gray-500 pr-10 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
                 errors.confirmPassword ? "border-red-500" : "border-mine-shaft-850"
               }`}
             />
             <button
               type="button"
               onClick={toggleConfirmPassword}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400 transition-colors"
+              disabled={isLoading || googleLoading}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-yellow-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
@@ -331,7 +556,8 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
             checked={formData.termsAccepted}
             onChange={handleChange}
             required
-            className="accent-yellow-400 w-4 h-4 mt-0.5 rounded-sm focus:ring-2 focus:ring-yellow-400"
+            disabled={isLoading || googleLoading}
+            className="accent-yellow-400 w-4 h-4 mt-0.5 rounded-sm focus:ring-2 focus:ring-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <label htmlFor="termsAccepted" className="text-sm text-gray-300">
             I accept the{" "}
@@ -346,14 +572,21 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
       {/* Submit Button */}
       <button
         type="submit"
-        disabled={isLoading}
+        disabled={isLoading || googleLoading}
         className={`w-full py-3 mt-4 font-semibold rounded-md transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
-          isLoading
+          isLoading || googleLoading
             ? "bg-gray-600 text-gray-400 cursor-not-allowed"
             : "bg-yellow-500 text-black hover:bg-yellow-400"
         }`}
       >
-        {isLoading ? "Creating Account..." : "Sign Up"}
+        {isLoading ? (
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-400 mr-2"></div>
+            Creating Account...
+          </div>
+        ) : (
+          "Sign Up"
+        )}
       </button>
 
       {/* Login Link */}
@@ -362,11 +595,49 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
         <button
           type="button"
           onClick={onSwitchToLogin}
-          className="text-yellow-400 underline hover:text-yellow-300"
+          disabled={isLoading || googleLoading}
+          className="text-yellow-400 underline hover:text-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Login
         </button>
       </p>
+
+      {/* Account Type Selection Modal for Google Sign-Up */}
+      {showAccountTypeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-mine-shaft-950 p-6 rounded-xl border border-mine-shaft-850 max-w-sm w-full mx-4 shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-4">Select Account Type</h3>
+            <p className="text-gray-400 mb-6 text-sm">
+              Choose how you want to use Jobluu:
+            </p>
+            <div className="space-y-3">
+              <button
+                onClick={() => handleGoogleSignup('APPLICANT')}
+                disabled={googleLoading}
+                className="w-full py-3 px-4 border border-mine-shaft-800 rounded-lg text-left text-white hover:bg-mine-shaft-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="font-medium">Job Seeker</div>
+                <div className="text-sm text-gray-400">I'm looking for job opportunities</div>
+              </button>
+              <button
+                onClick={() => handleGoogleSignup('EMPLOYER')}
+                disabled={googleLoading}
+                className="w-full py-3 px-4 border border-mine-shaft-800 rounded-lg text-left text-white hover:bg-mine-shaft-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="font-medium">Employer</div>
+                <div className="text-sm text-gray-400">I want to hire candidates</div>
+              </button>
+            </div>
+            <button
+              onClick={handleModalClose}
+              disabled={googleLoading}
+              className="w-full mt-4 py-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </motion.form>
   );
 };
