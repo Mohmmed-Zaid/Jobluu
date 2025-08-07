@@ -1,7 +1,6 @@
 package com.Cubix.Jobluu.controller;
 
 import com.Cubix.Jobluu.dto.UserDto;
-import com.Cubix.Jobluu.jwt.AuthenticationResponse;
 import com.Cubix.Jobluu.jwt.JwtHelper;
 import com.Cubix.Jobluu.jwt.MyUserDetailsService;
 import com.Cubix.Jobluu.service.UserService;
@@ -39,7 +38,6 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         try {
-            // Authenticate user
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmail(),
@@ -47,16 +45,10 @@ public class AuthController {
                     )
             );
 
-            // Load user details
             UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getEmail());
-
-            // Get user data
             UserDto user = userService.getUserByEmail(loginRequest.getEmail());
-
-            // Generate JWT token
             String jwt = jwtHelper.generateToken(userDetails.getUsername());
 
-            // Create response with both token and user data
             Map<String, Object> response = new HashMap<>();
             response.put("token", jwt);
             response.put("user", user);
@@ -85,7 +77,6 @@ public class AuthController {
                 if (username != null) {
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                     if (jwtHelper.isTokenValid(token, userDetails.getUsername())) {
-                        // Return user data along with validation
                         UserDto user = userService.getUserByEmail(username);
                         Map<String, Object> response = new HashMap<>();
                         response.put("valid", true);
@@ -132,7 +123,6 @@ public class AuthController {
                 String username = jwtHelper.getUsernameFromToken(token);
 
                 if (username != null) {
-                    // Generate new token
                     String newJwt = jwtHelper.generateToken(username);
                     UserDto user = userService.getUserByEmail(username);
 
@@ -149,7 +139,6 @@ public class AuthController {
         }
     }
 
-    // Inner class for login request
     @Data
     @AllArgsConstructor
     @NoArgsConstructor

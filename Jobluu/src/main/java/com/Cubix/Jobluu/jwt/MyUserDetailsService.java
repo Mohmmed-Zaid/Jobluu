@@ -19,6 +19,9 @@ public class MyUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         try {
             UserDto dto = userService.getUserByEmail(email);
+            if (dto == null) {
+                throw new UsernameNotFoundException("User not found with email: " + email);
+            }
             return new CustomUserDetails(dto.getId(), email, dto.getPassword(), dto.getAccountType());
         } catch (JobluuException e) {
             throw new UsernameNotFoundException("User not found with email: " + email, e);

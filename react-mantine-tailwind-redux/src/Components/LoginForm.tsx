@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAppDispatch, useAppSelector } from "../Store/hooks";
+import { useAppDispatch } from "../Store/hooks";
 import AuthService from "../Services/AuthService";
-import ResetPassword from './ResetPassword';
+import ResetPassword from '../SignUp/ResetPassword';
 
 interface LoginProps {
   onSwitchToSignup: () => void;
@@ -24,12 +24,10 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showAccountTypeModal, setShowAccountTypeModal] = useState(false);
   const [googleCredential, setGoogleCredential] = useState("");
+  const [selectedAccountType, setSelectedAccountType] = useState<'APPLICANT' | 'EMPLOYER'>('APPLICANT');
 
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  
-  // Get authentication state from Redux store
-  const { user, isAuthenticated } = useAppSelector((state) => state.user);
 
   // Initialize Google Sign-In
   useEffect(() => {
@@ -63,14 +61,6 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
       window.location.reload();
     }
   }, []);
-
-  // Redirect if user is already authenticated
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      console.log('User is already authenticated, redirecting to home...');
-      navigate('/'); // Redirect to home page instead of find-jobs
-    }
-  }, [isAuthenticated, user, navigate]);
 
   const togglePassword = () => setShowPassword((prev) => !prev);
 
@@ -114,9 +104,8 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
       
       setFormData({ email: "", password: "" });
       
-      // Redirect to home page after successful login
       setTimeout(() => {
-        navigate('/'); // Changed from '/find-jobs' to '/'
+        navigate('/find-jobs');
       }, 1000);
 
     } catch (error: any) {
@@ -170,9 +159,8 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
       await AuthService.loginWithGoogle(googleCredential, accountType, dispatch);
       showMessage("Google Sign-In successful! Redirecting...", "success");
       
-      // Redirect to home page after successful Google login
       setTimeout(() => {
-        navigate('/'); // Changed from '/find-jobs' to '/'
+        navigate('/find-jobs');
       }, 1000);
 
     } catch (error: any) {

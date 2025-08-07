@@ -1,6 +1,8 @@
 package com.Cubix.Jobluu.utility;
 
+import com.Cubix.Jobluu.entities.DatabaseSequence;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -23,31 +25,27 @@ public class Utilities {
         Utilities.mongoOperations = mongoOperations;
     }
 
-    public static Long getNextSequence(String collectionName) {
-        Query query = new Query(Criteria.where("_id").is(collectionName));
-        Update update = new Update().inc("sequence", 1);
+    /**
+     * Atomically increments and returns the NEXT sequence value for the given name.
+     * Ensures upsert on first use and returns the UPDATED value (not the old one).
+     */
+    public static Long getNextSequence(String sequenceName) {
+        Query query = new Query(Criteria.where("_id").is(sequenceName));
+        Update update = new Update().inc("sequence", 1); // <— increment 'sequence'
 
-        Counter counter = mongoOperations.findAndModify(
+        DatabaseSequence counter = mongoOperations.findAndModify(
                 query,
                 update,
-                Counter.class
+                FindAndModifyOptions.options().returnNew(true).upsert(true),
+                DatabaseSequence.class
         );
 
-        if (counter == null) {
-            counter = new Counter();
-            counter.setId(collectionName);
-            counter.setSequence(1L);
-            mongoOperations.save(counter);
-            return 1L;
-        }
-
-        return counter.getSequence();
+        return (counter != null && counter.getSequence() != null) ? counter.getSequence() : 1L;
     }
 
-    /**
-     * Generates a random OTP (One Time Password) of specified length
-     * @return String OTP
-     */
+
+
+    /** Generates a numeric OTP of length 6 */
     public static String generateOTP() {
         StringBuilder otp = new StringBuilder(OTP_LENGTH);
         for (int i = 0; i < OTP_LENGTH; i++) {
@@ -56,11 +54,7 @@ public class Utilities {
         return otp.toString();
     }
 
-    /**
-     * Generates OTP with custom length
-     * @param length desired length of OTP
-     * @return String OTP
-     */
+    /** Generates numeric OTP of custom length */
     public static String generateOTP(int length) {
         StringBuilder otp = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
@@ -69,10 +63,7 @@ public class Utilities {
         return otp.toString();
     }
 
-    /**
-     * Generates alphanumeric OTP
-     * @return String alphanumeric OTP
-     */
+    /** Generates alphanumeric OTP (A-Z, 0-9), length = 6 */
     public static String generateAlphanumericOTP() {
         String alphanumeric = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         StringBuilder otp = new StringBuilder(OTP_LENGTH);
@@ -82,38 +73,21 @@ public class Utilities {
         return otp.toString();
     }
 
-    /**
-     * Validates email format
-     * @param email email to validate
-     * @return boolean true if valid
-     */
+    /** Basic email format validation */
     public static boolean isValidEmail(String email) {
-        if (email == null || email.trim().isEmpty()) {
-            return false;
-        }
+        if (email == null || email.trim().isEmpty()) return false;
         String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
         return email.matches(emailRegex);
     }
 
-    /**
-     * Validates phone number format
-     * @param phoneNumber phone number to validate
-     * @return boolean true if valid
-     */
+    /** Basic Indian phone validation (10 digits, starts with 6–9) */
     public static boolean isValidPhoneNumber(String phoneNumber) {
-        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
-            return false;
-        }
-        // Indian phone number format: 10 digits starting with 6-9
+        if (phoneNumber == null || phoneNumber.trim().isEmpty()) return false;
         String phoneRegex = "^[6-9]\\d{9}$";
         return phoneNumber.replaceAll("\\s+", "").matches(phoneRegex);
     }
 
-    /**
-     * Generates a random string for various purposes
-     * @param length desired length
-     * @return random string
-     */
+    /** Generates random alphanumeric string of given length */
     public static String generateRandomString(int length) {
         String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         StringBuilder result = new StringBuilder(length);
@@ -121,17 +95,5 @@ public class Utilities {
             result.append(characters.charAt(random.nextInt(characters.length())));
         }
         return result.toString();
-    }
-
-    // Counter class for sequence generation
-    public static class Counter {
-        private String id;
-        private Long sequence;
-
-        // Getters and setters
-        public String getId() { return id; }
-        public void setId(String id) { this.id = id; }
-        public Long getSequence() { return sequence; }
-        public void setSequence(Long sequence) { this.sequence = sequence; }
     }
 }

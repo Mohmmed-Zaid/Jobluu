@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff } from "lucide-react";
-import { useAppDispatch } from "../Store/hooks";
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../Store/hooks";
 import AuthService from "../Services/AuthService";
 import { signupValidation } from "../Services/FormValidation";
 
@@ -40,6 +41,10 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
   const [initializationRetries, setInitializationRetries] = useState(0);
 
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  
+  // Get authentication state from Redux store
+  const { user, isAuthenticated } = useAppSelector((state) => state.user);
 
   // Initialize Google Sign-In with retry mechanism
   useEffect(() => {
@@ -71,6 +76,14 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
 
     initGoogle();
   }, [initializationRetries]);
+
+  // Redirect if user is already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('User is already authenticated, redirecting to home...');
+      navigate('/'); // Redirect to home page
+    }
+  }, [isAuthenticated, user, navigate]);
 
   // Toggle password visibility
   const togglePassword = () => setShowPassword((prev) => !prev);
@@ -200,7 +213,7 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
       // Use the AuthService register method
       await AuthService.register(signupData, dispatch);
       
-      showMessage("Account created successfully! You can now login.", "success");
+      showMessage("Account created successfully! Redirecting to home...", "success");
       
       // Clear form data
       setFormData({
@@ -213,9 +226,9 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
       });
       setErrors({});
 
-      // Auto-switch to login after 2 seconds
+      // Redirect to home page after successful signup
       setTimeout(() => {
-        onSwitchToLogin();
+        navigate('/'); // Changed from onSwitchToLogin() to direct home redirect
       }, 2000);
 
     } catch (error: any) {
@@ -304,10 +317,11 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
 
     try {
       await AuthService.loginWithGoogle(googleCredential, accountType, dispatch);
-      showMessage("Account created successfully! Redirecting...", "success");
+      showMessage("Account created successfully! Redirecting to home...", "success");
       
+      // Redirect to home page after successful Google signup
       setTimeout(() => {
-        onSwitchToLogin();
+        navigate('/'); // Changed from onSwitchToLogin() to direct home redirect
       }, 1000);
 
     } catch (error: any) {

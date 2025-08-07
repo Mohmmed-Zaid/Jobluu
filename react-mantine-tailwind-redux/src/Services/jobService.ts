@@ -1,5 +1,4 @@
-// Updated jobService.ts with proper field mapping
-
+// Services/jobService.ts - Fixed version with authentication
 export interface FrontendJobDTO {
   id?: number;
   title: string;
@@ -27,6 +26,7 @@ export interface BackendJobDTO {
   skillsRequired: string[];
   companyLogo?: string;
   postTime?: string;
+  daysAgo?: number;
 }
 
 // Helper functions for field mapping
@@ -72,42 +72,104 @@ const getApiBaseUrl = () => {
 class JobService {
   private baseUrl = `${getApiBaseUrl()}/jobs`;
 
+  // Get authentication headers
+  private getAuthHeaders(): HeadersInit {
+    const token = localStorage.getItem('token');
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return headers;
+  }
+
+  // Check if user is authenticated
+  private isAuthenticated(): boolean {
+    const token = localStorage.getItem('token');
+    return !!token;
+  }
+
+  // Handle authentication errors
+  private handleAuthError(response: Response): void {
+    if (response.status === 401 || response.status === 403) {
+      // Clear invalid token
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      
+      // Redirect to login page
+      window.location.href = '/login';
+      throw new Error('Authentication expired. Please login again.');
+    }
+  }
+
   async getAllJobs(): Promise<FrontendJobDTO[]> {
     try {
+      // Check authentication before making request
+      if (!this.isAuthenticated()) {
+        throw new Error('Please login to view jobs');
+      }
+
       const response = await fetch(`${this.baseUrl}/getAll`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include', // Include cookies if needed
       });
 
+      // Handle authentication errors
+      this.handleAuthError(response);
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch jobs: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        throw new Error(errorData.error || errorData.message || `Failed to fetch jobs: ${response.status}`);
       }
 
       const backendJobs: BackendJobDTO[] = await response.json();
       return backendJobs.map(mapToFrontend);
     } catch (error) {
       console.error('Error fetching jobs:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error('Failed to fetch jobs. Please try again.');
     }
   }
 
   async postJob(jobData: FrontendJobDTO): Promise<FrontendJobDTO> {
     try {
+      if (!this.isAuthenticated()) {
+        throw new Error('Please login to post jobs');
+      }
+
       const backendJobData = mapToBackend(jobData);
       
       const response = await fetch(`${this.baseUrl}/post`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(backendJobData),
       });
 
+      // Handle authentication errors
+      this.handleAuthError(response);
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed to create job: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        throw new Error(errorData.error || errorData.message || `Failed to create job: ${response.status}`);
       }
 
       const createdBackendJob: BackendJobDTO = await response.json();
@@ -123,20 +185,31 @@ class JobService {
 
   async updateJob(jobId: number, jobData: FrontendJobDTO, logoFile?: File): Promise<FrontendJobDTO> {
     try {
+      if (!this.isAuthenticated()) {
+        throw new Error('Please login to update jobs');
+      }
+
       const backendJobData = mapToBackend(jobData);
       
-      // For now, just use the basic update endpoint
       const response = await fetch(`${this.baseUrl}/update/${jobId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(backendJobData),
       });
 
+      // Handle authentication errors
+      this.handleAuthError(response);
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed to update job: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        throw new Error(errorData.error || errorData.message || `Failed to update job: ${response.status}`);
       }
 
       const updatedBackendJob: BackendJobDTO = await response.json();
@@ -152,16 +225,28 @@ class JobService {
 
   async deleteJob(jobId: number): Promise<void> {
     try {
+      if (!this.isAuthenticated()) {
+        throw new Error('Please login to delete jobs');
+      }
+
       const response = await fetch(`${this.baseUrl}/delete/${jobId}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
       });
 
+      // Handle authentication errors
+      this.handleAuthError(response);
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Failed to delete job: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        throw new Error(errorData.error || errorData.message || `Failed to delete job: ${response.status}`);
       }
     } catch (error) {
       console.error('Error deleting job:', error);
@@ -174,21 +259,37 @@ class JobService {
 
   async getJobById(jobId: number): Promise<FrontendJobDTO> {
     try {
+      if (!this.isAuthenticated()) {
+        throw new Error('Please login to view job details');
+      }
+
       const response = await fetch(`${this.baseUrl}/${jobId}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
       });
 
+      // Handle authentication errors
+      this.handleAuthError(response);
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch job: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        throw new Error(errorData.error || errorData.message || `Failed to fetch job: ${response.status}`);
       }
 
       const backendJob: BackendJobDTO = await response.json();
       return mapToFrontend(backendJob);
     } catch (error) {
       console.error('Error fetching job by ID:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
       throw new Error('Failed to fetch job. Please try again.');
     }
   }
@@ -212,6 +313,36 @@ class JobService {
     // For now, just post without logo until you implement the backend endpoint
     console.warn('Logo upload not implemented in backend yet');
     return this.postJob(jobData);
+  }
+
+  // Method to check token validity and refresh if needed
+  async ensureValidToken(): Promise<boolean> {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return false;
+    }
+
+    try {
+      // Decode token to check expiry
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const isExpired = payload.exp * 1000 < Date.now();
+      
+      if (isExpired) {
+        // Try to refresh token
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+          // You can call your auth service refresh method here
+          console.log('Token expired, should refresh');
+          return false;
+        }
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error checking token validity:', error);
+      return false;
+    }
   }
 }
 

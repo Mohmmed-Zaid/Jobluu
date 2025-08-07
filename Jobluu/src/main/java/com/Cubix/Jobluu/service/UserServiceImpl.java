@@ -53,6 +53,9 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private SequenceGeneratorService sequenceGeneratorService;
+
     @Value("${google.client-id}")
     private String googleClientId;
 
