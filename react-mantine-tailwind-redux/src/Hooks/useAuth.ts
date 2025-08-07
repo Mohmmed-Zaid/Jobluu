@@ -3,23 +3,21 @@ import { useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../Store/hooks';
 import { useNavigate } from 'react-router-dom';
 import AuthService, { LoginCredentials, RegisterCredentials } from '../Services/AuthService';
-import { clearError } from '../Store/authSlice';
+import { clearError, logout as logoutAction } from '../Store/authSlice';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   
+  // Get auth state from Redux
   const { 
     isAuthenticated, 
     token, 
     isLoading, 
-    error: authError 
+    error: authError,
+    user,
+    isInitialized
   } = useAppSelector((state) => state.auth);
-  
-  const { 
-    profile, 
-    isProfileLoaded 
-  } = useAppSelector((state) => state.user);
 
   const login = useCallback(async (credentials: LoginCredentials) => {
     try {
@@ -45,6 +43,18 @@ export const useAuth = () => {
     }
   }, [dispatch]);
 
+  const googleLogin = useCallback(async (credential: string, accountType: 'APPLICANT' | 'EMPLOYER') => {
+    try {
+      await AuthService.loginWithGoogle(credential, accountType, dispatch);
+      return { success: true };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Google login failed' 
+      };
+    }
+  }, [dispatch]);
+
   const logout = useCallback(async () => {
     try {
       await AuthService.logout(dispatch);
@@ -58,36 +68,35 @@ export const useAuth = () => {
     }
   }, [dispatch, navigate]);
 
-  const refreshToken = useCallback(async () => {
-    try {
-      const newToken = await AuthService.refreshToken(dispatch);
-      return { success: !!newToken, token: newToken };
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Token refresh failed' 
-      };
-    }
-  }, [dispatch]);
-
   const clearAuthError = useCallback(() => {
     dispatch(clearError());
   }, [dispatch]);
+
+  // Quick logout without API call (for expired tokens)
+  const forceLogout = useCallback(() => {
+    dispatch(logoutAction());
+    navigate('/login');
+  }, [dispatch, navigate]);
 
   return {
     // State
     isAuthenticated,
     isLoading,
     authError,
-    profile,
-    isProfileLoaded,
+    user,
     token,
+    isInitialized,
     
     // Actions
     login,
     register,
+    googleLogin,
     logout,
-    refreshToken,
+    forceLogout,
     clearAuthError,
+    
+    // Utility functions
+    getAuthHeaders: AuthService.getAuthHeaders.bind(AuthService),
+    apiRequest: AuthService.apiRequest.bind(AuthService),
   };
 };

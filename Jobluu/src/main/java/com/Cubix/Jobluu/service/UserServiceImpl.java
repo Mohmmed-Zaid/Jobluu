@@ -59,7 +59,6 @@ public class UserServiceImpl implements UserService {
     @Value("${google.client-id}")
     private String googleClientId;
 
-
     @Override
     public UserDto registerUser(UserDto userDto) throws JobluuException {
         Optional<User> optional = userRepository.findByEmail(userDto.getEmail());
@@ -67,7 +66,9 @@ public class UserServiceImpl implements UserService {
             throw new JobluuException("USER_FOUND");
         }
 
-        userDto.setProfileId(profileService.createProfile(userDto.getEmail()).toString());
+        // Fixed: Now works because createProfile returns ProfileDto
+        ProfileDto profile = profileService.createProfile(userDto.getEmail());
+        userDto.setProfileId(profile.getId().toString());
         userDto.setId(Utilities.getNextSequence("users"));
         userDto.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
@@ -78,7 +79,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto getUserByEmail(String email) throws JobluuException {
-      return userRepository.findByEmail(email).orElseThrow(()-> new JobluuException("USER_NOT_FOUND")).toDto();
+        return userRepository.findByEmail(email).orElseThrow(() -> new JobluuException("USER_NOT_FOUND")).toDto();
     }
 
     @Override
@@ -169,8 +170,9 @@ public class UserServiceImpl implements UserService {
             throw new JobluuException("USER_FOUND");
         }
 
-        // Create profile id
-        userDto.setProfileId(profileService.createProfile(userDto.getEmail()).toString());
+        // Fixed: Now works because createProfile returns ProfileDto
+        ProfileDto profile = profileService.createProfile(userDto.getEmail());
+        userDto.setProfileId(profile.getId().toString());
         userDto.setId(Utilities.getNextSequence("users"));
 
         // No password for Google users
@@ -196,4 +198,3 @@ public class UserServiceImpl implements UserService {
         return updated.toDto();
     }
 }
-

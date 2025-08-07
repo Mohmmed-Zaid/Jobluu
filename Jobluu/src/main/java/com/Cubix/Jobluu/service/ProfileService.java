@@ -5,9 +5,8 @@ import com.Cubix.Jobluu.exception.JobluuException;
 
 public interface ProfileService {
 
-    public Long createProfile(String email) throws JobluuException;
-
-    public ProfileDto getProfile(Long id) throws JobluuException;
-
-    public ProfileDto updateProfile(ProfileDto profileDto) throws JobluuException;
+    ProfileDto createProfile(String email) throws JobluuException;  // Fixed: Added this method
+    ProfileDto createProfile(ProfileDto profileDto) throws JobluuException;
+    ProfileDto getProfile(Long id) throws JobluuException;
+    ProfileDto updateProfile(ProfileDto profileDto) throws JobluuException;
 }
