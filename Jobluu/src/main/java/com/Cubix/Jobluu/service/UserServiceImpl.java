@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.Cubix.Jobluu.jwt.JwtAuthenticationFilter.log;
+
 @Service
 public class UserServiceImpl implements UserService {
 
@@ -165,36 +167,67 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto createGoogleUser(UserDto userDto) throws JobluuException {
-        // Email unique check
-        if (userRepository.findByEmail(userDto.getEmail()).isPresent()) {
-            throw new JobluuException("USER_FOUND");
+        try {
+            // Synchronized block to prevent race conditions
+            synchronized (this) {
+                // Double-check if user exists
+                Optional<User> existingUser = userRepository.findByEmail(userDto.getEmail());
+                if (existingUser.isPresent()) {
+                    log.info("User already exists for email: {}, returning existing user", userDto.getEmail());
+                    return existingUser.get().toDto();
+                }
+
+                // Create profile first
+                ProfileDto profile = profileService.createProfile(userDto.getEmail());
+                userDto.setProfileId(profile.getId().toString());
+                userDto.setId(Utilities.getNextSequence("users"));
+
+                // No password encoding for Google users
+                userDto.setPassword(""); // Empty string for Google users
+
+                User saved = userRepository.save(userDto.toEntity());
+                log.info("Created new Google user: {}", userDto.getEmail());
+
+                return saved.toDto();
+            }
+        } catch (Exception e) {
+            log.error("Error creating Google user: ", e);
+            // If user already exists due to race condition, return existing user
+            Optional<User> existingUser = userRepository.findByEmail(userDto.getEmail());
+            if (existingUser.isPresent()) {
+                log.info("Returning existing user due to race condition: {}", userDto.getEmail());
+                return existingUser.get().toDto();
+            }
+            throw new JobluuException("Failed to create Google user: " + e.getMessage());
         }
-
-        // Fixed: Now works because createProfile returns ProfileDto
-        ProfileDto profile = profileService.createProfile(userDto.getEmail());
-        userDto.setProfileId(profile.getId().toString());
-        userDto.setId(Utilities.getNextSequence("users"));
-
-        // No password for Google users
-        userDto.setPassword(""); // ensure empty; do not encode
-
-        User saved = userRepository.save(userDto.toEntity());
-        return saved.toDto();
     }
 
     @Override
     public UserDto updateUser(UserDto userDto) throws JobluuException {
-        User existing = userRepository.findByEmail(userDto.getEmail())
-                .orElseThrow(() -> new JobluuException("USER_NOT_FOUND"));
+        try {
+            Optional<User> existingUser = userRepository.findByEmail(userDto.getEmail());
+            if (existingUser.isPresent()) {
+                User user = existingUser.get();
 
-        // Update only selected fields
-        if (userDto.getName() != null) existing.setName(userDto.getName());
-        if (userDto.getGoogleId() != null) existing.setGoogleId(userDto.getGoogleId());
-        if (userDto.getProfilePicture() != null) existing.setProfilePicture(userDto.getProfilePicture());
-        if (userDto.getAccountType() != null) existing.setAccountType(userDto.getAccountType());
-        // DO NOT overwrite password here
+                // Update fields
+                if (userDto.getName() != null) {
+                    user.setName(userDto.getName());
+                }
+                if (userDto.getGoogleId() != null) {
+                    user.setGoogleId(userDto.getGoogleId());
+                }
+                if (userDto.getProfilePicture() != null) {
+                    user.setProfilePicture(userDto.getProfilePicture());
+                }
 
-        User updated = userRepository.save(existing);
-        return updated.toDto();
+                User saved = userRepository.save(user);
+                return saved.toDto();
+            } else {
+                throw new JobluuException("User not found for update");
+            }
+        } catch (Exception e) {
+            log.error("Error updating user: ", e);
+            throw new JobluuException("Failed to update user: " + e.getMessage());
+        }
     }
 }

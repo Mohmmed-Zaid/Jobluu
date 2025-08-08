@@ -16,9 +16,143 @@ export interface RegisterCredentials {
   accountType: 'APPLICANT' | 'EMPLOYER';
 }
 
+declare global {
+  interface Window {
+    google: any;
+    googleInitPromise: Promise<void> | null;
+  }
+}
+
 class AuthService {
-  // Fix: Use config file instead of process.env
   private baseURL = config.apiUrl;
+  private googleInitialized = false;
+  private initPromise: Promise<void> | null = null;
+
+  // Initialize Google Sign-In
+  async initializeGoogleAuth(): Promise<void> {
+    // Return existing promise if initialization is already in progress
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    // Return resolved promise if already initialized
+    if (this.googleInitialized && window.google) {
+      return Promise.resolve();
+    }
+
+    this.initPromise = new Promise((resolve, reject) => {
+      try {
+        // Check if Google script is already loaded
+        if (window.google?.accounts?.id) {
+          this.googleInitialized = true;
+          resolve();
+          return;
+        }
+
+        // Load Google Identity Services script
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        
+        script.onload = () => {
+          try {
+            // Initialize Google Sign-In
+            window.google.accounts.id.initialize({
+              client_id: config.googleClientId, // Make sure this is in your config
+              callback: () => {}, // We'll handle callbacks separately
+              auto_select: false,
+              cancel_on_tap_outside: true,
+            });
+            
+            this.googleInitialized = true;
+            console.log('✅ Google Sign-In initialized successfully');
+            resolve();
+          } catch (error) {
+            console.error('❌ Failed to initialize Google Sign-In:', error);
+            reject(error);
+          }
+        };
+
+        script.onerror = (error) => {
+          console.error('❌ Failed to load Google Sign-In script:', error);
+          reject(new Error('Failed to load Google Sign-In script'));
+        };
+
+        document.head.appendChild(script);
+      } catch (error) {
+        console.error('❌ Error setting up Google Sign-In:', error);
+        reject(error);
+      }
+    });
+
+    return this.initPromise;
+  }
+
+  // Check if Google is initialized
+  isGoogleInitialized(): boolean {
+    return this.googleInitialized && !!window.google?.accounts?.id;
+  }
+
+  // Prompt Google Sign-In
+  promptGoogleSignIn(callback: (response: any) => void): void {
+    if (!this.isGoogleInitialized()) {
+      throw new Error('Google Sign-In not initialized');
+    }
+
+    try {
+      window.google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // Fallback to popup if prompt is not displayed
+          this.renderGoogleButton(callback);
+        }
+      });
+
+      // Set up one-tap callback
+      window.google.accounts.id.initialize({
+        client_id: config.googleClientId,
+        callback: callback,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+    } catch (error) {
+      console.error('❌ Error prompting Google Sign-In:', error);
+      callback({ error: 'failed_to_prompt' });
+    }
+  }
+
+  // Render Google button as fallback
+  private renderGoogleButton(callback: (response: any) => void): void {
+    // Create temporary container for Google button
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.position = 'absolute';
+    buttonContainer.style.top = '-9999px';
+    buttonContainer.id = 'temp-google-btn';
+    document.body.appendChild(buttonContainer);
+
+    try {
+      window.google.accounts.id.renderButton(buttonContainer, {
+        theme: 'outline',
+        size: 'large',
+        type: 'standard',
+        width: '100%',
+      });
+
+      // Auto-click the button
+      setTimeout(() => {
+        const button = buttonContainer.querySelector('[role="button"]') as HTMLElement;
+        if (button) {
+          button.click();
+        }
+        // Clean up
+        document.body.removeChild(buttonContainer);
+      }, 100);
+    } catch (error) {
+      console.error('❌ Error rendering Google button:', error);
+      document.body.removeChild(buttonContainer);
+      callback({ error: 'failed_to_render_button' });
+    }
+  }
 
   // Use the Redux thunk for login
   async login(credentials: LoginCredentials, dispatch: AppDispatch): Promise<void> {
@@ -69,6 +203,8 @@ class AuthService {
     try {
       dispatch(loginStart());
 
+      console.log('🔄 Sending Google login request...');
+      
       const response = await fetch(`${this.baseURL}/auth/google`, {
         method: 'POST',
         headers: {
@@ -80,12 +216,16 @@ class AuthService {
         }),
       });
 
+      console.log('📡 Response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ Server error:', errorData);
         throw new Error(errorData.error || errorData.message || 'Google sign-in failed');
       }
 
       const data = await response.json();
+      console.log('✅ Google login response:', data);
 
       // Store tokens
       localStorage.setItem('token', data.token);
@@ -101,6 +241,7 @@ class AuthService {
       dispatch(setUser(data.user));
 
     } catch (error) {
+      console.error('❌ Google login error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Google sign-in failed';
       dispatch(loginFailure(errorMessage));
       throw error;

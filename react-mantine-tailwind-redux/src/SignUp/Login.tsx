@@ -24,6 +24,7 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showAccountTypeModal, setShowAccountTypeModal] = useState(false);
   const [googleCredential, setGoogleCredential] = useState("");
+  const [googleInitialized, setGoogleInitialized] = useState(false);
 
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -35,9 +36,13 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
   useEffect(() => {
     const initGoogle = async () => {
       try {
+        console.log('🔄 Initializing Google Sign-In for Login...');
         await AuthService.initializeGoogleAuth();
+        setGoogleInitialized(true);
+        console.log('✅ Google Sign-In initialized successfully for Login');
       } catch (error) {
-        console.error('Failed to initialize Google Auth:', error);
+        console.error('❌ Failed to initialize Google Auth for Login:', error);
+        setGoogleInitialized(false);
       }
     };
 
@@ -68,7 +73,7 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
   useEffect(() => {
     if (isAuthenticated && user) {
       console.log('User is already authenticated, redirecting to home...');
-      navigate('/'); // Redirect to home page instead of find-jobs
+      navigate('/');
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -114,9 +119,8 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
       
       setFormData({ email: "", password: "" });
       
-      // Redirect to home page after successful login
       setTimeout(() => {
-        navigate('/'); // Changed from '/find-jobs' to '/'
+        navigate('/');
       }, 1000);
 
     } catch (error: any) {
@@ -137,27 +141,78 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
     }
   };
 
-  // Handle Google Sign-In button click
-  const handleGoogleSignIn = () => {
-    if (!window.google) {
+  // Handle Google Sign-In button click with improved implementation
+  const handleGoogleSignIn = async () => {
+    console.log('🔄 Google Sign-In button clicked');
+    console.log('Google initialized:', googleInitialized);
+    console.log('AuthService initialized:', AuthService.isGoogleInitialized());
+
+    if (!googleInitialized || !AuthService.isGoogleInitialized()) {
       showMessage("Google Sign-In is not available. Please try again later.", "error");
       return;
     }
 
     setGoogleLoading(true);
-    
-    window.google.accounts.id.prompt({
-      callback: (response: any) => {
+    showMessage("Opening Google Sign-In...", "info");
+
+    try {
+      console.log('🔄 Prompting Google Sign-In...');
+      
+      const timeoutId = setTimeout(() => {
+        console.log('⏰ Google Sign-In timeout');
+        setGoogleLoading(false);
+        showMessage("Google Sign-In took too long. Please try again.", "error");
+      }, 30000);
+      
+      AuthService.promptGoogleSignIn((response: any) => {
+        clearTimeout(timeoutId);
+        console.log('📨 Google Sign-In response received:', response);
+        
+        if (response.error) {
+          console.error('❌ Google Sign-In error:', response.error);
+          let errorMessage = "Google Sign-In failed.";
+          
+          switch (response.error) {
+            case 'popup_closed_by_user':
+              errorMessage = "Google Sign-In was cancelled.";
+              break;
+            case 'access_denied':
+              errorMessage = "Access denied by Google.";
+              break;
+            case 'popup_blocked':
+              errorMessage = "Pop-up was blocked. Please allow pop-ups and try again.";
+              break;
+            case 'failed_to_prompt':
+            case 'failed_to_render_button':
+              errorMessage = "Failed to open Google Sign-In. Please try again.";
+              break;
+            default:
+              if (response.error.includes('network') || response.error.includes('failed')) {
+                errorMessage = "Network error occurred. Please check your connection and try again.";
+              }
+              break;
+          }
+          
+          showMessage(errorMessage, "error");
+          setGoogleLoading(false);
+          return;
+        }
+
         if (response.credential) {
+          console.log('✅ Google credential received successfully');
           setGoogleCredential(response.credential);
           setShowAccountTypeModal(true);
         } else {
-          showMessage("Google Sign-In was cancelled.", "error");
+          console.error('❌ No credential in Google response');
+          showMessage("Google Sign-In failed. No credential received.", "error");
+          setGoogleLoading(false);
         }
-        setGoogleLoading(false);
-      },
-      cancel_on_tap_outside: false,
-    });
+      });
+    } catch (error: any) {
+      console.error('❌ Google Sign-In error:', error);
+      showMessage("Google Sign-In failed. Please try again or use email login.", "error");
+      setGoogleLoading(false);
+    }
   };
 
   // Handle account type selection for Google login
@@ -167,21 +222,41 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
     showMessage("Signing in with Google...", "info");
 
     try {
+      console.log('🔄 Processing Google login with account type:', accountType);
+      
       await AuthService.loginWithGoogle(googleCredential, accountType, dispatch);
       showMessage("Google Sign-In successful! Redirecting...", "success");
       
-      // Redirect to home page after successful Google login
       setTimeout(() => {
-        navigate('/'); // Changed from '/find-jobs' to '/'
+        navigate('/');
       }, 1000);
 
     } catch (error: any) {
       console.error('❌ Google login error:', error);
-      showMessage(error.message || "Google Sign-In failed. Please try again.", "error");
+      let errorMessage = "Google Sign-In failed. Please try again.";
+      
+      if (error.message) {
+        if (error.message.includes('CORS')) {
+          errorMessage = "Server configuration issue. Please try again later or use email login.";
+        } else if (error.message.includes('Network') || error.message.includes('fetch')) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      showMessage(errorMessage, "error");
     } finally {
       setGoogleLoading(false);
       setGoogleCredential("");
     }
+  };
+
+  // Handle modal close
+  const handleModalClose = () => {
+    setShowAccountTypeModal(false);
+    setGoogleCredential("");
+    setGoogleLoading(false);
   };
 
   const openReset = () => setResetOpen(true);
@@ -230,7 +305,12 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
           {googleLoading ? (
             <div className="flex items-center">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600 mr-2"></div>
-              Signing in with Google...
+              {showAccountTypeModal ? "Signing in..." : "Connecting to Google..."}
+            </div>
+          ) : !googleInitialized ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600 mr-2"></div>
+              Loading Google Sign-In...
             </div>
           ) : (
             <>
@@ -349,8 +429,8 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
 
       {/* Account Type Selection Modal for Google Sign-In */}
       {showAccountTypeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-mine-shaft-950 p-6 rounded-xl border border-mine-shaft-850 max-w-sm w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-mine-shaft-950 p-6 rounded-xl border border-mine-shaft-850 max-w-sm w-full mx-4 shadow-2xl">
             <h3 className="text-xl font-bold text-white mb-4">Select Account Type</h3>
             <p className="text-gray-400 mb-6 text-sm">
               Choose how you want to use Jobluu:
@@ -358,25 +438,25 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onSwitchToResetPassword
             <div className="space-y-3">
               <button
                 onClick={() => handleGoogleLogin('APPLICANT')}
-                className="w-full py-3 px-4 border border-mine-shaft-800 rounded-lg text-left text-white hover:bg-mine-shaft-900 transition-colors"
+                disabled={googleLoading}
+                className="w-full py-3 px-4 border border-mine-shaft-800 rounded-lg text-left text-white hover:bg-mine-shaft-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="font-medium">Job Seeker</div>
                 <div className="text-sm text-gray-400">I'm looking for job opportunities</div>
               </button>
               <button
                 onClick={() => handleGoogleLogin('EMPLOYER')}
-                className="w-full py-3 px-4 border border-mine-shaft-800 rounded-lg text-left text-white hover:bg-mine-shaft-900 transition-colors"
+                disabled={googleLoading}
+                className="w-full py-3 px-4 border border-mine-shaft-800 rounded-lg text-left text-white hover:bg-mine-shaft-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="font-medium">Employer</div>
                 <div className="text-sm text-gray-400">I want to hire candidates</div>
               </button>
             </div>
             <button
-              onClick={() => {
-                setShowAccountTypeModal(false);
-                setGoogleCredential("");
-              }}
-              className="w-full mt-4 py-2 text-gray-400 hover:text-white transition-colors"
+              onClick={handleModalClose}
+              disabled={googleLoading}
+              className="w-full mt-4 py-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>

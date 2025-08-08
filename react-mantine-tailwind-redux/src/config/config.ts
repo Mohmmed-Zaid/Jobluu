@@ -1,37 +1,36 @@
-// config/config.ts or src/config.ts
+// config/config.ts
 interface Config {
   apiUrl: string;
   environment: 'development' | 'production' | 'staging';
+  googleClientId: string;
 }
 
 const getConfig = (): Config => {
-  // Check if we're in development (localhost)
-  const isDevelopment = window.location.hostname === 'localhost' || 
-                       window.location.hostname === '127.0.0.1' ||
-                       window.location.hostname.includes('localhost');
+  const hostname = window.location.hostname;
 
-  // You can also check for staging environment
-  const isStaging = window.location.hostname.includes('staging') ||
-                   window.location.hostname.includes('dev');
+  const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
+  const isStaging = !isDevelopment && (hostname.includes('staging') || hostname.includes('dev'));
 
   if (isDevelopment) {
     return {
       apiUrl: 'http://localhost:8080/api',
-      environment: 'development'
+      environment: 'development',
+      googleClientId: '415838507936-um9s5pbvbubp1hs2k84lvjmsph4e38m3.apps.googleusercontent.com'
     };
   }
 
   if (isStaging) {
     return {
-      apiUrl: 'https://your-staging-api.com/api', // Replace with your staging URL
-      environment: 'staging'
+      apiUrl: 'https://your-staging-api.com/api',
+      environment: 'staging',
+      googleClientId: 'STAGING_CLIENT_ID'
     };
   }
 
-  // Production
   return {
-    apiUrl: 'https://your-production-api.com/api', // Replace with your production URL
-    environment: 'production'
+    apiUrl: 'https://your-production-api.com/api',
+    environment: 'production',
+    googleClientId: 'PRODUCTION_CLIENT_ID'
   };
 };
 

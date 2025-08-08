@@ -82,7 +82,7 @@ public class JwtHelper {
     }
 
     // Check if token expired
-    private boolean isTokenExpired(String token) {
+    public boolean isTokenExpired(String token) {
         try {
             Date expiration = extractExpiration(token);
             Date now = new Date();
