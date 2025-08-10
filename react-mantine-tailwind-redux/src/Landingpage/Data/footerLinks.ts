@@ -1,5 +1,5 @@
-// ✅ src/Data/footerLinks.ts
-const footerLinks = [
+
+const FooterLinks = [
   {
     title: "Product",
     links: ["Find Job", "Find Company", "Find Employees"],
@@ -14,4 +14,4 @@ const footerLinks = [
   },
 ];
 
-export default footerLinks;
+export default FooterLinks;

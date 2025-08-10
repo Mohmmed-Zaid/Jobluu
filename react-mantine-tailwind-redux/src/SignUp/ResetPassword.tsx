@@ -40,16 +40,62 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ opened, close }) => {
     showMessage("Sending OTP to your email...", "info");
 
     try {
-      const response = await fetch(`http://localhost:8080/api/users/sendOTP/${email}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      // Try GET request first (since your backend endpoint doesn't really need POST)
+      const response = await fetch(`https://jobluubackend.onrender.com/api/users/sendOTP/${encodeURIComponent(email)}`, {
+      method: 'POST',  // Changed from 'GET' to 'POST'
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+        mode: 'cors', // Explicitly set CORS mode
       });
       
-      const data = await response.json();
+      console.log('Response status:', response.status);
+      console.log('Response headers:', [...response.headers.entries()]);
       
-      if (data.success || response.ok) {
+      // Check if response is ok before trying to parse JSON
+      if (!response.ok) {
+        // Try to get error message from response
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        
+        if (response.status === 403) {
+          throw new Error('Access denied. Please check if CORS is enabled on the backend or if authentication is required.');
+        }
+        
+        throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to send OTP'}`);
+      }
+      
+      // Check if response has content before parsing JSON
+      const contentType = response.headers.get('content-type');
+      const responseText = await response.text();
+      console.log('Raw response:', responseText);
+      
+      if (!contentType?.includes('application/json')) {
+        console.error('Non-JSON response received:', contentType);
+        // Try to parse anyway if it looks like JSON
+        if (responseText.trim().startsWith('{')) {
+          const data = JSON.parse(responseText);
+          if (data.success) {
+            showMessage("OTP sent successfully! Check your email.", "success");
+            setStep('otp');
+            setCountdown(300);
+            
+            setTimeout(() => {
+              if (otpInputRefs.current[0]) {
+                otpInputRefs.current[0].focus();
+              }
+            }, 500);
+            return;
+          }
+        }
+        throw new Error('Server returned invalid response format');
+      }
+      
+      const data = JSON.parse(responseText);
+      console.log('Response data:', data);
+      
+      if (data.success) {
         showMessage("OTP sent successfully! Check your email.", "success");
         setStep('otp');
         setCountdown(300);
@@ -64,7 +110,20 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ opened, close }) => {
       }
     } catch (error: any) {
       console.error('Send OTP error:', error);
-      const errorMessage = error?.message || "Failed to send OTP. Please try again.";
+      let errorMessage = "Failed to send OTP. Please try again.";
+      
+      if (error.message.includes('403') || error.message.includes('Access denied')) {
+        errorMessage = "Access denied. Please contact support or check if the backend is properly configured.";
+      } else if (error.message.includes('CORS')) {
+        errorMessage = "Network configuration error. Please contact support.";
+      } else if (error.message.includes('JSON')) {
+        errorMessage = "Server response error. Please check if the backend is running.";
+      } else if (error.message.includes('fetch')) {
+        errorMessage = "Network error. Please check your connection.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       showMessage(errorMessage, "error");
     } finally {
       setIsLoading(false);
@@ -151,10 +210,28 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ opened, close }) => {
     showMessage("Verifying OTP...", "info");
 
     try {
-      const response = await fetch(`http://localhost:8080/api/users/verifyOtp/${email}/${otpString}`);
-      const data = await response.json();
+      const response = await fetch(`https://jobluubackend.onrender.com/api/users/verifyOtp/${email}/${otpString}`);
       
-      if (data.success || response.ok) {
+      console.log('OTP Verify Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OTP Verify Error response:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText || 'Invalid OTP'}`);
+      }
+      
+      const contentLength = response.headers.get('content-length');
+      const contentType = response.headers.get('content-type');
+      
+      if (contentLength === '0' || !contentType?.includes('application/json')) {
+        console.error('Empty or non-JSON response on OTP verify');
+        throw new Error('Server returned empty or invalid response');
+      }
+      
+      const data = await response.json();
+      console.log('OTP Verify Response data:', data);
+      
+      if (data.success) {
         showMessage("OTP verified successfully!", "success");
         setTimeout(() => {
           setStep('newPassword');
@@ -164,7 +241,16 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ opened, close }) => {
       }
     } catch (error: any) {
       console.error('Verify OTP error:', error);
-      const errorMessage = error?.message || "Invalid OTP. Please try again.";
+      let errorMessage = "Invalid OTP. Please try again.";
+      
+      if (error.message.includes('JSON')) {
+        errorMessage = "Server response error. Please check if the backend is running.";
+      } else if (error.message.includes('fetch')) {
+        errorMessage = "Network error. Please check your connection.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       showMessage(errorMessage, "error");
       
       setOtp(["", "", "", "", "", ""]);
@@ -198,7 +284,7 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ opened, close }) => {
     showMessage("Updating password...", "info");
 
     try {
-      const response = await fetch(`http://localhost:8080/api/users/changePass`, {
+      const response = await fetch(`https://jobluubackend.onrender.com/api/users/changePass`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -244,16 +330,34 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ opened, close }) => {
     showMessage("Resending OTP...", "info");
 
     try {
-      const response = await fetch(`http://localhost:8080/api/users/sendOTP/${email}`, {
+      const response = await fetch(`https://jobluubackend.onrender.com/api/users/sendOTP/${email}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({})
       });
       
-      const data = await response.json();
+      console.log('Resend Response status:', response.status);
       
-      if (data.success || response.ok) {
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Resend Error response:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText || 'Failed to resend OTP'}`);
+      }
+      
+      const contentLength = response.headers.get('content-length');
+      const contentType = response.headers.get('content-type');
+      
+      if (contentLength === '0' || !contentType?.includes('application/json')) {
+        console.error('Empty or non-JSON response on resend');
+        throw new Error('Server returned empty or invalid response');
+      }
+      
+      const data = await response.json();
+      console.log('Resend Response data:', data);
+      
+      if (data.success) {
         showMessage("New OTP sent successfully!", "success");
         setOtp(["", "", "", "", "", ""]);
         setCountdown(300);
@@ -267,7 +371,16 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ opened, close }) => {
       }
     } catch (error: any) {
       console.error('Resend OTP error:', error);
-      const errorMessage = error?.message || "Failed to resend OTP. Please try again.";
+      let errorMessage = "Failed to resend OTP. Please try again.";
+      
+      if (error.message.includes('JSON')) {
+        errorMessage = "Server response error. Please check if the backend is running.";
+      } else if (error.message.includes('fetch')) {
+        errorMessage = "Network error. Please check your connection.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       showMessage(errorMessage, "error");
     } finally {
       setIsLoading(false);
@@ -654,7 +767,7 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ opened, close }) => {
         </div>
       </div>
     </div>
-    );
+  );
 };
 
 export default ResetPassword;

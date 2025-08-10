@@ -3,6 +3,7 @@ import Header from "../Header/Header";
 import Footer from "../footer/Footer";
 import SearchBar from "../FindJobs/SearchBar";
 import Jobs from "../FindJobs/Jobs";
+import { useJobs } from '../context/JobContext'; // Import the context
 
 export interface JobFilters {
   searchQuery: string;
@@ -31,12 +32,14 @@ export interface Job {
 }
 
 const FindJob = () => {
-  // API Configuration - Update this with your backend URL
-  const API_BASE_URL = 'http://localhost:8080'; // Change this to your backend URL
+  // Use the JobContext
+  const { jobs, setJobs, loading, setLoading } = useJobs();
   
-  const [jobs, setJobs] = useState<Job[]>([]);
+  // API Configuration - Update this with your backend URL
+  const API_BASE_URL = 'https://jobluubackend.onrender.com';
+  
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<JobFilters>({
     searchQuery: "",
     location: "",
@@ -47,159 +50,190 @@ const FindJob = () => {
     skills: []
   });
 
-  // Fetch jobs from API
+  // Transform backend job data to frontend format
+  const transformJobData = (backendJob: any): Job => {
+    return {
+      id: backendJob.id,
+      jobTitle: backendJob.title || backendJob.jobTitle || 'Software Developer',
+      company: backendJob.companyName || backendJob.company || 'Tech Company',
+      companyLogo: backendJob.logoUrl || backendJob.companyLogo || `https://via.placeholder.com/40x40/facc15/000000?text=${(backendJob.companyName || 'TC').charAt(0)}`,
+      location: backendJob.location || 'India',
+      jobType: backendJob.jobType || 'Full-time',
+      experience: backendJob.experienceLevel || backendJob.experience || '1-3 years',
+      packageOffered: backendJob.salary ? (
+        typeof backendJob.salary === 'string' 
+          ? parseInt(backendJob.salary.replace(/[^\d]/g, '')) * 1000 
+          : backendJob.salary
+      ) : Math.floor(Math.random() * 1000000) + 500000,
+      description: backendJob.description || 'We are looking for a talented professional to join our team.',
+      skillsRequired: backendJob.skills || backendJob.skillsRequired || ['JavaScript', 'React', 'Node.js'],
+      applicants: backendJob.applicants || Math.floor(Math.random() * 50) + 1,
+      postTime: backendJob.createdAt || backendJob.postTime || new Date().toISOString(),
+      jobStatus: backendJob.status ? backendJob.status.toUpperCase() : 'ACTIVE'
+    };
+  };
+
+  // Generate comprehensive mock jobs to ensure we always have 12+ jobs
+  const generateMockJobs = (): Job[] => {
+    const companies = [
+      { name: "TechCorp", logo: "https://via.placeholder.com/40x40/3b82f6/ffffff?text=TC" },
+      { name: "DataSoft", logo: "https://via.placeholder.com/40x40/ef4444/ffffff?text=DS" },
+      { name: "Innovation Labs", logo: "https://via.placeholder.com/40x40/10b981/ffffff?text=IL" },
+      { name: "CloudTech", logo: "https://via.placeholder.com/40x40/8b5cf6/ffffff?text=CT" },
+      { name: "DesignStudio", logo: "https://via.placeholder.com/40x40/f59e0b/ffffff?text=DS" },
+      { name: "AI Solutions", logo: "https://via.placeholder.com/40x40/06b6d4/ffffff?text=AI" },
+      { name: "WebCrafters", logo: "https://via.placeholder.com/40x40/ec4899/ffffff?text=WC" },
+      { name: "MobileTech", logo: "https://via.placeholder.com/40x40/14b8a6/ffffff?text=MT" },
+      { name: "CyberSecure", logo: "https://via.placeholder.com/40x40/f97316/ffffff?text=CS" },
+      { name: "GameDev Studio", logo: "https://via.placeholder.com/40x40/84cc16/ffffff?text=GD" },
+      { name: "FinTech Plus", logo: "https://via.placeholder.com/40x40/6366f1/ffffff?text=FT" },
+      { name: "HealthTech", logo: "https://via.placeholder.com/40x40/dc2626/ffffff?text=HT" },
+    ];
+
+    const jobTitles = [
+      "Frontend Developer", "Backend Developer", "Full Stack Developer", 
+      "UI/UX Designer", "DevOps Engineer", "Data Scientist", 
+      "Mobile App Developer", "Software Engineer", "Product Manager",
+      "QA Engineer", "Cybersecurity Specialist", "Game Developer"
+    ];
+
+    const locations = [
+      "Mumbai, Maharashtra", "Pune, Maharashtra", "Bangalore, Karnataka",
+      "Hyderabad, Telangana", "Chennai, Tamil Nadu", "Delhi, NCR",
+      "Gurgaon, Haryana", "Noida, UP", "Ahmedabad, Gujarat",
+      "Kolkata, West Bengal", "Jaipur, Rajasthan", "Kochi, Kerala"
+    ];
+
+    const skillSets = [
+      ["React", "JavaScript", "TypeScript", "CSS"],
+      ["Java", "Spring Boot", "MongoDB", "REST API"],
+      ["Python", "Django", "PostgreSQL", "Docker"],
+      ["React Native", "Flutter", "iOS", "Android"],
+      ["AWS", "Docker", "Kubernetes", "Jenkins"],
+      ["Python", "Machine Learning", "TensorFlow", "SQL"],
+      ["Figma", "Adobe XD", "Photoshop", "User Research"],
+      ["Node.js", "Express", "MongoDB", "GraphQL"],
+      ["Vue.js", "Nuxt.js", "Firebase", "Tailwind CSS"],
+      ["C#", ".NET Core", "Azure", "SQL Server"],
+      ["PHP", "Laravel", "MySQL", "Redis"],
+      ["Go", "Gin", "PostgreSQL", "Microservices"]
+    ];
+
+    const experiences = ["0-1 years", "1-2 years", "2-4 years", "3-5 years", "5+ years"];
+    const jobTypes = ["Full-time", "Part-time", "Contract", "Remote"];
+
+    return Array.from({ length: 15 }, (_, index) => {
+      const company = companies[index % companies.length];
+      const jobTitle = jobTitles[index % jobTitles.length];
+      const location = locations[index % locations.length];
+      const skills = skillSets[index % skillSets.length];
+      
+      return {
+        id: 1000 + index, // Use high IDs to avoid conflicts with backend
+        jobTitle,
+        company: company.name,
+        companyLogo: company.logo,
+        location,
+        jobType: jobTypes[index % jobTypes.length],
+        experience: experiences[index % experiences.length],
+        packageOffered: (Math.floor(Math.random() * 15) + 5) * 100000, // 5L to 20L
+        description: `We are looking for a skilled ${jobTitle} to join our dynamic team at ${company.name}. You will work on cutting-edge projects and collaborate with talented professionals to deliver exceptional solutions.`,
+        skillsRequired: skills,
+        applicants: Math.floor(Math.random() * 100) + 1,
+        postTime: new Date(Date.now() - Math.random() * 10 * 24 * 60 * 60 * 1000).toISOString(),
+        jobStatus: Math.random() > 0.1 ? "ACTIVE" : "CLOSED"
+      };
+    });
+  };
+
+  // Fetch jobs from API with retry logic
   const fetchJobs = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
       // Try different possible API endpoints
       const possibleUrls = [
         `${API_BASE_URL}/jobs/getAll`,
-        '/api/jobs/getAll',
-        '/jobs/getAll',
+        `/api/jobs/getAll`,
+        `/jobs/getAll`,
         `${API_BASE_URL}/api/jobs/getAll`
       ];
 
-      let response;
+      let backendJobs: Job[] = [];
       let success = false;
 
+      // Try to fetch from backend
       for (const url of possibleUrls) {
         try {
-          response = await fetch(url);
+          const response = await fetch(url);
           if (response.ok) {
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.includes('application/json')) {
               const data = await response.json();
-              setJobs(data);
-              setFilteredJobs(data);
+              backendJobs = data.map(transformJobData);
               success = true;
-              console.log(`Successfully fetched ${data.length} jobs from ${url}`);
+              console.log(`Successfully fetched ${backendJobs.length} jobs from ${url}`);
               break;
             }
           }
         } catch (err) {
-          console.log(`Failed to fetch from ${url}:`, err.message);
+          console.log(`Failed to fetch from ${url}:`, (err as Error).message);
           continue;
         }
       }
 
-      if (!success) {
-        console.warn('Could not fetch jobs from any endpoint. Using mock data.');
-        // Use mock data for development
-        const mockJobs = generateMockJobs();
-        setJobs(mockJobs);
-        setFilteredJobs(mockJobs);
+      // Always generate mock jobs and merge with backend jobs
+      const mockJobs = generateMockJobs();
+      let allJobs: Job[] = [];
+
+      if (success && backendJobs.length > 0) {
+        // Merge backend jobs with mock jobs, giving priority to backend jobs
+        const backendJobIds = new Set(backendJobs.map(job => job.id));
+        const filteredMockJobs = mockJobs.filter(job => !backendJobIds.has(job.id));
+        allJobs = [...backendJobs, ...filteredMockJobs];
+        console.log(`Total jobs: ${allJobs.length} (${backendJobs.length} from backend, ${filteredMockJobs.length} mock)`);
+      } else {
+        // Use only mock jobs if backend is unavailable
+        allJobs = mockJobs;
+        console.log(`Using ${allJobs.length} mock jobs (backend unavailable)`);
       }
+
+      // Ensure we have at least 12 jobs
+      if (allJobs.length < 12) {
+        const additionalMockJobs = generateMockJobs().slice(allJobs.length, 12);
+        allJobs = [...allJobs, ...additionalMockJobs];
+      }
+
+      // Update both local state and context
+      setJobs(allJobs); // This updates the JobContext
+      setFilteredJobs(allJobs);
 
     } catch (error) {
       console.error('Error fetching jobs:', error);
+      setError('Failed to load jobs. Showing sample jobs.');
       // Fallback to mock data
       const mockJobs = generateMockJobs();
-      setJobs(mockJobs);
+      setJobs(mockJobs); // Update context
       setFilteredJobs(mockJobs);
     } finally {
       setLoading(false);
     }
   };
 
-  // Generate mock jobs for development/testing
-  const generateMockJobs = (): Job[] => {
-    return [
-      {
-        id: 1,
-        jobTitle: "Frontend Developer",
-        company: "TechCorp",
-        companyLogo: "https://via.placeholder.com/40x40/facc15/000000?text=TC",
-        location: "Mumbai, Maharashtra",
-        jobType: "Full-time",
-        experience: "2-4 years",
-        packageOffered: 800000,
-        description: "We are looking for a skilled Frontend Developer to join our dynamic team. You will be responsible for building user-friendly web applications using modern technologies.",
-        skillsRequired: ["React", "JavaScript", "TypeScript", "CSS"],
-        applicants: 25,
-        postTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        jobStatus: "ACTIVE"
-      },
-      {
-        id: 2,
-        jobTitle: "Backend Developer",
-        company: "DataSoft",
-        companyLogo: "https://via.placeholder.com/40x40/facc15/000000?text=DS",
-        location: "Pune, Maharashtra",
-        jobType: "Full-time",
-        experience: "3-5 years",
-        packageOffered: 1200000,
-        description: "Join our backend team to build scalable APIs and microservices. Experience with Java and Spring Boot required.",
-        skillsRequired: ["Java", "Spring Boot", "MongoDB", "REST API"],
-        applicants: 18,
-        postTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        jobStatus: "ACTIVE"
-      },
-      {
-        id: 3,
-        jobTitle: "Full Stack Developer",
-        company: "Innovation Labs",
-        companyLogo: "https://via.placeholder.com/40x40/facc15/000000?text=IL",
-        location: "Bangalore, Karnataka",
-        jobType: "Full-time",
-        experience: "1-3 years",
-        packageOffered: 900000,
-        description: "Looking for a full-stack developer to work on cutting-edge projects. Must have experience with both frontend and backend technologies.",
-        skillsRequired: ["React", "Node.js", "MongoDB", "Express"],
-        applicants: 42,
-        postTime: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        jobStatus: "ACTIVE"
-      },
-      {
-        id: 4,
-        jobTitle: "DevOps Engineer",
-        company: "CloudTech",
-        companyLogo: "https://via.placeholder.com/40x40/facc15/000000?text=CT",
-        location: "Hyderabad, Telangana",
-        jobType: "Full-time",
-        experience: "2-5 years",
-        packageOffered: 1500000,
-        description: "We need a DevOps engineer to manage our cloud infrastructure and CI/CD pipelines. AWS experience preferred.",
-        skillsRequired: ["AWS", "Docker", "Kubernetes", "Jenkins"],
-        applicants: 12,
-        postTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        jobStatus: "ACTIVE"
-      },
-      {
-        id: 5,
-        jobTitle: "UI/UX Designer",
-        company: "DesignStudio",
-        companyLogo: "https://via.placeholder.com/40x40/facc15/000000?text=DS",
-        location: "Delhi, NCR",
-        jobType: "Contract",
-        experience: "1-2 years",
-        packageOffered: 600000,
-        description: "Creative UI/UX designer needed to create beautiful and intuitive user interfaces. Portfolio review required.",
-        skillsRequired: ["Figma", "Adobe XD", "Photoshop", "User Research"],
-        applicants: 35,
-        postTime: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        jobStatus: "ACTIVE"
-      },
-      {
-        id: 6,
-        jobTitle: "Data Scientist",
-        company: "AI Solutions",
-        companyLogo: "https://via.placeholder.com/40x40/facc15/000000?text=AI",
-        location: "Chennai, Tamil Nadu",
-        jobType: "Full-time",
-        experience: "3-6 years",
-        packageOffered: 1800000,
-        description: "Data scientist role focusing on machine learning and predictive analytics. PhD preferred but not required.",
-        skillsRequired: ["Python", "Machine Learning", "TensorFlow", "SQL"],
-        applicants: 8,
-        postTime: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-        jobStatus: "ACTIVE"
-      }
-    ];
-  };
+  // Set up periodic refresh to catch new jobs from backend
+  useEffect(() => {
+    fetchJobs();
+    
+    // Refresh jobs every 5 minutes to catch new posts
+    const interval = setInterval(fetchJobs, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Filter jobs based on current filters
   const filterJobs = () => {
-    let filtered = [...jobs];
+    let filtered = [...jobs]; // Use jobs from context
 
     // Search query filter
     if (filters.searchQuery.trim()) {
@@ -240,7 +274,7 @@ const FindJob = () => {
       );
     }
 
-    // Salary range filter
+    // Salary range filter (convert to lakhs for comparison)
     filtered = filtered.filter(job => {
       const salary = job.packageOffered / 100000; // Convert to lakhs
       return salary >= filters.salaryRange[0] && salary <= filters.salaryRange[1];
@@ -256,6 +290,9 @@ const FindJob = () => {
         )
       );
     }
+
+    // Only show active jobs
+    filtered = filtered.filter(job => job.jobStatus === 'ACTIVE');
 
     setFilteredJobs(filtered);
   };
@@ -278,29 +315,36 @@ const FindJob = () => {
     });
   };
 
-  useEffect(() => {
-    fetchJobs();
-  }, []);
-
+  // Apply filters when filters or jobs change
   useEffect(() => {
     filterJobs();
-  }, [filters, jobs]);
+  }, [filters, jobs]); // Add jobs dependency
 
   return (
     <div className="min-h-[100vh] bg-mine-shaft-950 font-poppins">
       <Header />
+      
+      {/* Error Display */}
+      {error && (
+        <div className="mx-4 mt-4 p-3 bg-yellow-900/30 border border-yellow-400/50 rounded-lg text-yellow-200 text-sm">
+          {error}
+        </div>
+      )}
+
       <SearchBar 
         filters={filters}
         updateFilters={updateFilters}
         clearFilters={clearFilters}
         jobCount={filteredJobs.length}
       />
+      
       <Jobs 
         jobs={filteredJobs}
         loading={loading}  
         filters={filters}
         updateFilters={updateFilters}
       />
+      
       <Footer />
     </div>
   );

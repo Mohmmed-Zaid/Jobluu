@@ -31,9 +31,13 @@ const JobCards: React.FC<JobProps> = ({ job }) => {
     navigate(`/apply-job/${job.id}`);
   };
 
+  // Handle card click to navigate to job details
+  const handleCardClick = () => {
+    navigate(`/jobs/${job.id}`);
+  };
+
   // Create a simple logo based on company name
   const getCompanyLogo = (companyName: string) => {
-    // Add null/undefined check
     if (!companyName || typeof companyName !== 'string') {
       return (
         <div className="w-10 h-10 bg-gray-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
@@ -49,7 +53,6 @@ const JobCards: React.FC<JobProps> = ({ job }) => {
       .toUpperCase()
       .substring(0, 2);
     
-    // Generate a consistent color based on company name
     const colors = [
       'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-red-500', 
       'bg-indigo-500', 'bg-pink-500', 'bg-orange-500', 'bg-teal-500'
@@ -64,7 +67,11 @@ const JobCards: React.FC<JobProps> = ({ job }) => {
   };
 
   return (
-    <Link to={`/jobs/${job.id}`} className="block">
+    // Changed from Link to div with onClick for better control
+    <div 
+      onClick={handleCardClick}
+      className="block cursor-pointer"
+    >
       <div className="bg-gradient-to-br bg-mine-shaft-950 to-slate-800 p-4 rounded-2xl text-white shadow-lg w-full h-72 flex flex-col justify-between transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-yellow-400/20 border border-slate-700 hover:border-yellow-400/50 group">
         
         {/* Header: Logo + Info + Bookmark */}
@@ -97,6 +104,11 @@ const JobCards: React.FC<JobProps> = ({ job }) => {
           <IconBookmark 
             size={18}
             className="text-slate-400 hover:text-yellow-400 cursor-pointer transition-colors duration-200 hover:scale-110"
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent card navigation when clicking bookmark
+              // Add bookmark functionality here
+              console.log('Bookmarked job:', job.id);
+            }}
           />
         </div>
 
@@ -152,7 +164,7 @@ const JobCards: React.FC<JobProps> = ({ job }) => {
           </button>
         </div>
       </div>
-    </Link>
+    </div>
   );
 };
 

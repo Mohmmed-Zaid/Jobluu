@@ -15,7 +15,9 @@ const FindTalent = () => {
     // Uses a dark background and Poppins font as per the original FindJob structure.
     <div className="min-h-[100vh] bg-mine-shaft-950 font-poppins">
       <Header /> {/* Reusing the existing Header component */}
-      <SearchBar /> {/* Talent-specific search bar */}
+      <SearchBar onFilterChange={function (filters: Record<string, string>): void {
+        throw new Error("Function not implemented.");
+      } } /> {/* Talent-specific search bar */}
       <Talents /> {/* Component to display the grid of talent cards */}
       <Footer /> {/* Reusing the existing Footer component */}
     </div>

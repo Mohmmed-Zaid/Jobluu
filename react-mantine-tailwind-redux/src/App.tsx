@@ -28,6 +28,10 @@ import ProtectedRoute from './Components/ProtectedRoute';
 import WildCard from './Pages/WildCard';
 import NotificationPanel from './notifications/NotificationPanel';
 
+// Import the JobProvider
+import { JobProvider } from './context/JobContext';
+import Login from './SignUp/Login';
+
 function App() {
   const theme = createTheme({
     primaryColor: "bright-sun",
@@ -57,107 +61,131 @@ function App() {
         <MantineProvider theme={theme}>
           <BrowserRouter>
             <AuthProvider>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<HomePages />} />
-                <Route path="/home" element={<HomePages />} />
-                <Route path="/signup" element={<SignupPage />} />
-                <Route path="/login" element={<SignupPage />} />
-                
-                {/* Protected Routes - Require Authentication */}
-                <Route 
-                  path="/find-jobs" 
-                  element={
-                    <ProtectedRoute>
-                      <FindJob />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/find-talent" 
-                  element={
-                    <ProtectedRoute>
-                      <FindTalent />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/notifications" 
-                  element={
-                    <ProtectedRoute>
-                      <NotificationPanel />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/talent-profile/:id" 
-                  element={
-                    <ProtectedRoute>
-                      <TalentProfilePage />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/jobs" 
-                  element={
-                    <ProtectedRoute>
-                      <JobDescPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route
-                  path="/apply-job/:jobId"
-                  element={
-                    <ProtectedRoute>
-                      <ApplyJobPage />
-                    </ProtectedRoute>
-                  }
-                />
-                
-                <Route 
-                  path="/company" 
-                  element={
-                    <ProtectedRoute>
-                      <CompanyPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/posted-job" 
-                  element={
-                    <ProtectedRoute>
-                      <PostedJobPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/job-history" 
-                  element={
-                    <ProtectedRoute>
-                      <JobHistoryPage />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/profile" 
-                  element={
-                    <ProtectedRoute>
-                      <ProfilePage />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                {/* Catch all route for 404 */}
-                <Route path="*" element={<WildCard />} />
-              </Routes>
+              {/* Wrap everything with JobProvider to share job data */}
+              <JobProvider>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<HomePages />} />
+                  <Route path="/home" element={<HomePages />} />
+                  <Route path="/signup" element={<SignupPage />} />
+                  <Route path="/login" element={<SignupPage />} />
+                  
+                  {/* Protected Routes - Require Authentication */}
+                  <Route 
+                    path="/find-jobs" 
+                    element={
+                      <ProtectedRoute>
+                        <FindJob />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/find-talent" 
+                    element={
+                      <ProtectedRoute>
+                        <FindTalent />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/notifications" 
+                    element={
+                      <ProtectedRoute>
+                        <NotificationPanel />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/talent-profile/:id" 
+                    element={
+                      <ProtectedRoute>
+                        <TalentProfilePage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* FIXED: Updated route to accept job ID parameter */}
+                  <Route 
+                    path="/jobs/:jobId" 
+                    element={
+                      <ProtectedRoute>
+                        <JobDescPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Keep the old /jobs route for backward compatibility */}
+                  <Route 
+                    path="/jobs" 
+                    element={
+                      <ProtectedRoute>
+                        <JobDescPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route
+                    path="/apply-job/:jobId"
+                    element={
+                      <ProtectedRoute>
+                        <ApplyJobPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  
+                  <Route 
+                    path="/company" 
+                    element={
+                      <ProtectedRoute>
+                        <CompanyPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* OPTIONAL: Add company page with ID for specific companies */}
+                  <Route 
+                    path="/company/:companyId" 
+                    element={
+                      <ProtectedRoute>
+                        <CompanyPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/posted-job" 
+                    element={
+                      <ProtectedRoute>
+                        <PostedJobPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/job-history" 
+                    element={
+                      <ProtectedRoute>
+                        <JobHistoryPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/profile" 
+                    element={
+                      <ProtectedRoute>
+                        <ProfilePage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Catch all route for 404 */}
+                  <Route path="*" element={<WildCard />} />
+                </Routes>
+              </JobProvider>
             </AuthProvider>
           </BrowserRouter>
         </MantineProvider>

@@ -9,29 +9,36 @@ const getConfig = (): Config => {
   const hostname = window.location.hostname;
 
   const isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1';
-  const isStaging = !isDevelopment && (hostname.includes('staging') || hostname.includes('dev'));
+  const isStaging =
+    !isDevelopment &&
+    (hostname.includes('staging') || hostname.includes('dev'));
+
+  const apiUrl = 'https://jobluubackend.onrender.com/api';
+  const googleClientId =
+    '415838507936-um9s5pbvbubp1hs2k84lvjmsph4e38m3.apps.googleusercontent.com';
 
   if (isDevelopment) {
     return {
-      apiUrl: 'http://localhost:8080/api',
+      apiUrl,
       environment: 'development',
-      googleClientId: '415838507936-um9s5pbvbubp1hs2k84lvjmsph4e38m3.apps.googleusercontent.com'
+      googleClientId,
     };
   }
 
   if (isStaging) {
     return {
-      apiUrl: 'https://your-staging-api.com/api',
+      apiUrl,
       environment: 'staging',
-      googleClientId: 'STAGING_CLIENT_ID'
+      googleClientId,
     };
   }
 
   return {
-    apiUrl: 'https://your-production-api.com/api',
+    apiUrl,
     environment: 'production',
-    googleClientId: 'PRODUCTION_CLIENT_ID'
+    googleClientId,
   };
 };
 
 export const config = getConfig();
+

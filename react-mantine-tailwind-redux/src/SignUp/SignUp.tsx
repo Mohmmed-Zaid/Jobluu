@@ -636,41 +636,75 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin }) => {
       </p>
 
       {/* Account Type Selection Modal for Google Sign-Up */}
-      {showAccountTypeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-mine-shaft-950 p-6 rounded-xl border border-mine-shaft-850 max-w-sm w-full mx-4 shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-4">Select Account Type</h3>
-            <p className="text-gray-400 mb-6 text-sm">
-              Choose how you want to use Jobluu:
-            </p>
-            <div className="space-y-3">
-              <button
-                onClick={() => handleGoogleSignup('APPLICANT')}
-                disabled={googleLoading}
-                className="w-full py-3 px-4 border border-mine-shaft-800 rounded-lg text-left text-white hover:bg-mine-shaft-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div className="font-medium">Job Seeker</div>
-                <div className="text-sm text-gray-400">I'm looking for job opportunities</div>
-              </button>
-              <button
-                onClick={() => handleGoogleSignup('EMPLOYER')}
-                disabled={googleLoading}
-                className="w-full py-3 px-4 border border-mine-shaft-800 rounded-lg text-left text-white hover:bg-mine-shaft-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div className="font-medium">Employer</div>
-                <div className="text-sm text-gray-400">I want to hire candidates</div>
-              </button>
-            </div>
-            <button
-              onClick={handleModalClose}
-              disabled={googleLoading}
-              className="w-full mt-4 py-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+{showAccountTypeModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] backdrop-blur-sm">
+    <div className="bg-mine-shaft-950 p-6 rounded-xl border border-mine-shaft-850 max-w-sm w-full mx-4 shadow-2xl">
+      <h3 className="text-xl font-bold text-white mb-4">Select Account Type</h3>
+      <p className="text-gray-400 mb-6 text-sm">
+        Choose how you want to use Jobluu:
+      </p>
+      <div className="space-y-3">
+        {/* Job Seeker Button */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Job Seeker clicked!'); // Debug
+            if (typeof handleGoogleSignup === 'function') {
+              handleGoogleSignup('APPLICANT');
+            } else {
+              console.error('handleGoogleSignup is not defined');
+            }
+          }}
+          className="w-full py-3 px-4 border border-mine-shaft-800 rounded-lg text-left text-white bg-transparent hover:bg-mine-shaft-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+        >
+          <div className="font-medium">Job Seeker</div>
+          <div className="text-sm text-gray-400">I'm looking for job opportunities</div>
+        </button>
+
+        {/* Employer Button */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Employer clicked!'); // Debug
+            if (typeof handleGoogleSignup === 'function') {
+              handleGoogleSignup('EMPLOYER');
+            } else {
+              console.error('handleGoogleSignup is not defined');
+            }
+          }}
+          className="w-full py-3 px-4 border border-mine-shaft-800 rounded-lg text-left text-white bg-transparent hover:bg-mine-shaft-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+        >
+          <div className="font-medium">Employer</div>
+          <div className="text-sm text-gray-400">I want to hire candidates</div>
+        </button>
+      </div>
+      
+      {/* Cancel Button */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('Cancel clicked!'); // Debug
+          if (typeof handleModalClose === 'function') {
+            handleModalClose();
+          } else if (typeof setShowAccountTypeModal === 'function') {
+            setShowAccountTypeModal(false);
+          } else {
+            console.error('No close function available');
+          }
+        }}
+        className="w-full mt-4 py-2 text-gray-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 bg-transparent border-none"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
     </motion.form>
   );
 };
